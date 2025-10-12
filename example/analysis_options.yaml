@@ -1,0 +1,60 @@
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  trailing_commas: preserve
+  page_width: 135
+
+linter:
+  rules:
+    avoid_multiple_declarations_per_line: false
+    await_only_futures: true
+    unawaited_futures: true
+    avoid_single_cascade_in_expression_statements: true
+    unnecessary_string_interpolations: true
+    unnecessary_brace_in_string_interps: true
+    prefer_interpolation_to_compose_strings: true
+    prefer_typing_uninitialized_variables: true
+    unnecessary_lambdas: true
+    avoid_types_on_closure_parameters: true
+    constant_identifier_names: false
+    non_constant_identifier_names: false
+    prefer_is_not_operator: true
+    prefer_single_quotes: true
+    avoid_function_literals_in_foreach_calls: true
+    use_key_in_widget_constructors: false
+    overridden_fields: false
+    avoid_renaming_method_parameters: false
+    public_member_api_docs: false
+    sort_constructors_first: false
+    avoid_catches_without_on_clauses: false
+    sort_pub_dependencies: false
+    always_put_required_named_parameters_first: false
+    lines_longer_than_80_chars: false
+    omit_local_variable_types: false
+    avoid_positional_boolean_parameters: false
+    sized_box_for_whitespace: true
+    avoid_unnecessary_containers: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_const_constructors_in_immutables: true
+    prefer_relative_imports: false
+    avoid_relative_lib_imports: true
+    always_use_package_imports: true
+    implementation_imports: false
+    document_ignores: false
+    avoid_setters_without_getters: false
+    require_trailing_commas: false
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+    flutter_style_todos: ignore
+    avoid_print: ignore
+    no_default_cases: ignore
+    one_member_abstracts: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  plugins:
+    - custom_lint
