@@ -1,11 +1,5 @@
 # Capture Helper
 
----
-
-**Author:** [Alexis Louis](https://alexislouis.xyz)
-
----
-
 Un plugin Flutter pour la numérisation de documents avec compression d'images intégrée, utilisant VisionKit (iOS) et ML Kit Document Scanner (Android).
 
 ## 📋 Table des matières
@@ -495,4 +489,5 @@ Ce projet est sous licence MIT.
 
 ## Auteur
 
+**Author:** [Alexis Louis](https://alexislouis.xyz)
 Développé avec ❤️ pour faciliter la numérisation de documents dans Flutter.

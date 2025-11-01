@@ -1,11 +1,5 @@
 # Capture Helper - Application Exemple
 
----
-
-**Author:** [Alexis Louis](https://alexislouis.xyz)
-
----
-
 Application de démonstration complète du plugin **Capture Helper** pour Flutter.
 
 ## 📱 Fonctionnalités de l'app
