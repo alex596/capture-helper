@@ -58,7 +58,7 @@ Version initiale du plugin avec support complet iOS et Android.
 ### Exigences
 
 - Flutter SDK : >=3.3.0
-- Dart SDK : >=3.9.0
+- Dart SDK : >=3.8.0
 - iOS : 13.0+ (appareil physique requis, pas de simulateur)
 - Android : API 21+ avec Google Play Services
 - Java : 17, 21 ou 23
