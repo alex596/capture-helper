@@ -5,7 +5,7 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.0.1] - 2025-10-19
+## [1.0.1] - 2025-11-01
 
 Downgrade sdk: ^3.9.0 -> ^3.8.0
 
