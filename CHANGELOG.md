@@ -5,7 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.0] - 26-11-25
+## [1.1.1]
+### Flutter
+- Mise à jour du sample
+
+## [1.1.0]
 
 ### Ajouts
 - **Support PNG** : Nouveau paramètre `outputFormat` dans `CaptureHelperScanOptions`
