@@ -20,6 +20,7 @@ class ScanOptions {
   ScanOptions({
     required this.autoCompress,
     required this.compressionQuality,
+    required this.outputFormat,
   });
 
   /// Si true, compresse automatiquement l'image après la capture
@@ -28,10 +29,14 @@ class ScanOptions {
   /// Qualité de compression (0-100) si autoCompress est true
   int compressionQuality;
 
+  /// Format de sortie : 'jpeg' ou 'png'
+  String outputFormat;
+
   Object encode() {
     return <Object?>[
       autoCompress,
       compressionQuality,
+      outputFormat,
     ];
   }
 
@@ -40,6 +45,7 @@ class ScanOptions {
     return ScanOptions(
       autoCompress: result[0]! as bool,
       compressionQuality: result[1]! as int,
+      outputFormat: result[2]! as String,
     );
   }
 }

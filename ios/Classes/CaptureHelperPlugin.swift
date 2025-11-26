@@ -52,7 +52,10 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
 
         // Créer le service de numérisation
         if #available(iOS 13.0, *) {
-            let scanner = DocumentScannerService(presentingViewController: viewController)
+            let scanner = DocumentScannerService(
+                presentingViewController: viewController,
+                outputFormat: options.outputFormat
+            )
             self.scannerService = scanner
 
             scanner.scanDocument { [weak self] result in

@@ -72,22 +72,27 @@ struct ScanOptions {
   var autoCompress: Bool
   /// Qualité de compression (0-100) si autoCompress est true
   var compressionQuality: Int64
+  /// Format de sortie : 'jpeg' ou 'png'
+  var outputFormat: String
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptions? {
     let autoCompress = pigeonVar_list[0] as! Bool
     let compressionQuality = pigeonVar_list[1] as! Int64
+    let outputFormat = pigeonVar_list[2] as! String
 
     return ScanOptions(
       autoCompress: autoCompress,
-      compressionQuality: compressionQuality
+      compressionQuality: compressionQuality,
+      outputFormat: outputFormat
     )
   }
   func toList() -> [Any?] {
     return [
       autoCompress,
       compressionQuality,
+      outputFormat,
     ]
   }
 }

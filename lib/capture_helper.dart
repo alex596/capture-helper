@@ -1,6 +1,7 @@
 export 'src/models/scan_options.dart';
 export 'src/models/scan_result.dart';
 export 'src/models/compression_result.dart';
+export 'src/models/output_format.dart';
 
 import 'package:capture_helper/src/generated/document_scanner_api.g.dart';
 import 'package:capture_helper/src/models/scan_options.dart';
@@ -65,6 +66,7 @@ class CaptureHelper {
       final pigeonOptions = ScanOptions(
         autoCompress: options.autoCompress,
         compressionQuality: options.compressionQuality,
+        outputFormat: options.outputFormat.name, // 'jpeg' ou 'png'
       );
 
       final pigeonResult = await _api.scanDocument(pigeonOptions);

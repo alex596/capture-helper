@@ -18,9 +18,13 @@ class ScanOptions {
   /// Qualité de compression (0-100) si autoCompress est true
   final int compressionQuality;
 
+  /// Format de sortie : 'jpeg' ou 'png'
+  final String outputFormat;
+
   ScanOptions({
     required this.autoCompress,
     required this.compressionQuality,
+    required this.outputFormat,
   });
 }
 
