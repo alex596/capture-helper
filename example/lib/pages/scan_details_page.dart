@@ -23,6 +23,13 @@ class _ScanDetailsPageState extends State<ScanDetailsPage> {
 
   String get currentImagePath => widget.imagePaths[_currentImageIndex];
 
+  String get currentFileExtension {
+    final path = currentImagePath.toLowerCase();
+    if (path.endsWith('.png')) return 'PNG';
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'JPEG';
+    return 'Unknown';
+  }
+
   Future<int> _getFileSize(String path) async {
     try {
       final file = File(path);
@@ -137,36 +144,65 @@ class _ScanDetailsPageState extends State<ScanDetailsPage> {
                     'Original Image',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 8),
-                  FutureBuilder<int>(
-                    future: _getFileSize(currentImagePath),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        final size = snapshot.data!;
-                        final sizeKB = (size / 1024).toStringAsFixed(1);
-                        final sizeMB = (size / (1024 * 1024)).toStringAsFixed(2);
-                        final formattedSize = size > 1024 * 1024 ? '$sizeMB MB' : '$sizeKB KB';
-
-                        return Text(
-                          'Size: $formattedSize',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 16,
-                          ),
-                        );
-                      }
-                      return const Text('Loading...');
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Path: ${currentImagePath.split('/').last}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              currentFileExtension == 'PNG' ? Icons.high_quality : Icons.image,
+                              color: currentFileExtension == 'PNG' ? Colors.blue[700] : Colors.orange[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Format: $currentFileExtension',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        FutureBuilder<int>(
+                          future: _getFileSize(currentImagePath),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final size = snapshot.data!;
+                              final sizeKB = (size / 1024).toStringAsFixed(1);
+                              final sizeMB = (size / (1024 * 1024)).toStringAsFixed(2);
+                              final formattedSize = size > 1024 * 1024 ? '$sizeMB MB' : '$sizeKB KB';
+
+                              return Text(
+                                'Size: $formattedSize',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 16,
+                                ),
+                              );
+                            }
+                            return const Text('Loading...');
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          currentImagePath.split('/').last,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 32),
@@ -223,13 +259,39 @@ class _ScanDetailsPageState extends State<ScanDetailsPage> {
                   ),
 
                   const SizedBox(height: 8),
-                  Text(
-                    _getQualityDescription(),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  Row(
+                    children: [
+                      if (currentFileExtension == 'PNG')
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange[100],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'PNG: Quality ignored (lossless)',
+                            style: TextStyle(
+                              color: Colors.orange[900],
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      if (currentFileExtension == 'JPEG')
+                        Expanded(
+                          child: Text(
+                            _getQualityDescription(),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
 
                   const SizedBox(height: 24),

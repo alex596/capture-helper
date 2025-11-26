@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
   bool _isScanning = false;
   bool _isScanningAvailable = false;
   String? _statusMessage;
+  OutputFormat _selectedFormat = OutputFormat.jpeg;
 
   @override
   void initState() {
@@ -64,9 +65,10 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final result = await _captureHelper.scanDocument(
-        options: const CaptureHelperScanOptions(
+        options: CaptureHelperScanOptions(
           autoCompress: false,
           compressionQuality: 80,
+          outputFormat: _selectedFormat,
         ),
       );
 
@@ -145,14 +147,34 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.grey[600],
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+              // Sélecteur de format
+              SegmentedButton<OutputFormat>(
+                segments: const [
+                  ButtonSegment<OutputFormat>(
+                    value: OutputFormat.jpeg,
+                    label: Text('JPEG'),
+                  ),
+                  ButtonSegment<OutputFormat>(
+                    value: OutputFormat.png,
+                    label: Text('PNG'),
+                  ),
+                ],
+                selected: {_selectedFormat},
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _selectedFormat = newSelection.first;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
               if (_isScanning)
                 const CircularProgressIndicator()
               else
                 ElevatedButton.icon(
                   onPressed: _isScanningAvailable ? _scanDocument : null,
                   icon: const Icon(Icons.camera_alt),
-                  label: const Text('Scan Document'),
+                  label: Text('Scan as ${_selectedFormat.name.toUpperCase()}'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
@@ -186,40 +208,9 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-              const SizedBox(height: 32),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Features',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildFeatureItem('✓ Automatic edge detection'),
-                      _buildFeatureItem('✓ Multi-page scanning'),
-                      _buildFeatureItem('✓ Image compression'),
-                      _buildFeatureItem('✓ High-quality output'),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 50),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.grey[700],
         ),
       ),
     );
