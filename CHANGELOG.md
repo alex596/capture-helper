@@ -5,11 +5,18 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.0.1] - 2025-11-01
+## [1.1.0] - 26-11-25
+Changements iOS:
+- Ajout de DispatchQueue.main.async dans le callback de requestAccess
+
+Changements Android:
+- Ajout explicite de la permission CAMERA dans AndroidManifest.xml
+
+## [1.0.1] - 20-11-25
 
 Downgrade sdk: ^3.9.0 -> ^3.8.0
 
-## [1.0.0] - 2025-01-19
+## [1.0.0] - 19-11-25
 
 Version initiale du plugin avec support complet iOS et Android.
 

@@ -30,10 +30,12 @@ class PermissionManager {
 
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
-                if granted {
-                    completion(.success(()))
-                } else {
-                    completion(.failure(PermissionError.cameraNotAuthorized))
+                DispatchQueue.main.async {
+                    if granted {
+                        completion(.success(()))
+                    } else {
+                        completion(.failure(PermissionError.cameraNotAuthorized))
+                    }
                 }
             }
 
