@@ -1,6 +1,6 @@
 import UIKit
 
-/// Service gérant la compression d'images JPEG
+/// Service gérant la compression d'images JPEG et PNG
 class ImageCompressionService {
     enum CompressionError: Error {
         case fileNotFound
@@ -29,10 +29,10 @@ class ImageCompressionService {
         let compressedSize: Int
     }
 
-    /// Compresse une image JPEG
+    /// Compresse une image JPEG ou PNG
     /// - Parameters:
     ///   - imagePath: Chemin vers l'image source
-    ///   - quality: Qualité de compression (0-100)
+    ///   - quality: Qualité de compression (0-100), utilisé seulement pour JPEG
     /// - Returns: Informations sur la compression
     func compressImage(at imagePath: String, quality: Int) -> Result<CompressionInfo, Error> {
         let fileURL = URL(fileURLWithPath: imagePath)
@@ -52,11 +52,22 @@ class ImageCompressionService {
             return .failure(CompressionError.invalidImageData)
         }
 
-        // Convertir la qualité de 0-100 vers 0.0-1.0
-        let compressionQuality = CGFloat(quality) / 100.0
+        // Déterminer le format basé sur l'extension
+        let fileExtension = fileURL.pathExtension.lowercased()
+        let isPNG = fileExtension == "png"
 
-        // Compresser l'image
-        guard let compressedData = image.jpegData(compressionQuality: compressionQuality) else {
+        // Compresser selon le format
+        let compressedData: Data?
+        if isPNG {
+            // PNG : compression sans perte, pas de paramètre qualité
+            compressedData = image.pngData()
+        } else {
+            // JPEG : compression avec qualité
+            let compressionQuality = CGFloat(quality) / 100.0
+            compressedData = image.jpegData(compressionQuality: compressionQuality)
+        }
+
+        guard let data = compressedData else {
             return .failure(CompressionError.compressionFailed)
         }
 
@@ -65,9 +76,9 @@ class ImageCompressionService {
 
         // Sauvegarder
         do {
-            try compressedData.write(to: outputURL)
+            try data.write(to: outputURL)
 
-            let compressedSize = compressedData.count
+            let compressedSize = data.count
 
             return .success(CompressionInfo(
                 outputURL: outputURL,

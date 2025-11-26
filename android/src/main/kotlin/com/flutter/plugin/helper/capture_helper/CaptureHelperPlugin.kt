@@ -19,6 +19,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
     private var activity: Activity? = null
     private var pendingResult: BasicMessageChannel.Reply<Any?>? = null
+    private var outputFormat: String = "jpeg"
     private lateinit var scanChannel: BasicMessageChannel<Any?>
     private lateinit var availabilityChannel: BasicMessageChannel<Any?>
 
@@ -82,6 +83,11 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
         }
 
         try {
+            // Extraire le format de sortie des options
+            @Suppress("UNCHECKED_CAST")
+            val options = message as? Map<String, Any?>
+            outputFormat = options?.get("outputFormat") as? String ?: "jpeg"
+
             startScanning(reply)
         } catch (e: Exception) {
             reply.reply(listOf(
@@ -204,13 +210,24 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                 return
             }
 
+            // Déterminer le format basé sur l'extension du fichier source
+            val isPNG = imagePath.endsWith(".png", ignoreCase = true)
+            val fileExtension = if (isPNG) "png" else "jpg"
+            val compressFormat = if (isPNG) {
+                android.graphics.Bitmap.CompressFormat.PNG
+            } else {
+                android.graphics.Bitmap.CompressFormat.JPEG
+            }
+
             // Create output file
-            val outputFileName = "compressed_${System.currentTimeMillis()}.jpg"
+            val outputFileName = "compressed_${System.currentTimeMillis()}.$fileExtension"
             val outputFile = File(activity!!.filesDir, outputFileName)
 
             // Compress and save
+            // PNG: qualité ignorée (compression sans perte)
+            // JPEG: qualité utilisée
             FileOutputStream(outputFile).use { out ->
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, out)
+                bitmap.compress(compressFormat, if (isPNG) 100 else quality, out)
             }
 
             // Recycle bitmap to free memory
@@ -261,15 +278,30 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                             try {
                                 val imagePaths = pages.mapNotNull { page ->
                                     page.imageUri?.let { uri ->
-                                        // Copy to app's private directory
-                                        val fileName = "scan_${System.currentTimeMillis()}_${pages.indexOf(page)}.jpg"
+                                        // Déterminer l'extension selon le format
+                                        val fileExtension = if (outputFormat == "png") "png" else "jpg"
+
+                                        // Lire et convertir si nécessaire
+                                        val bitmap = android.provider.MediaStore.Images.Media.getBitmap(
+                                            activity!!.contentResolver,
+                                            uri
+                                        )
+
+                                        val fileName = "scan_${System.currentTimeMillis()}_${pages.indexOf(page)}.$fileExtension"
                                         val destFile = File(activity!!.filesDir, fileName)
 
-                                        activity!!.contentResolver.openInputStream(uri)?.use { input ->
-                                            FileOutputStream(destFile).use { output ->
-                                                input.copyTo(output)
+                                        // Sauvegarder dans le bon format
+                                        FileOutputStream(destFile).use { output ->
+                                            val format = if (outputFormat == "png") {
+                                                android.graphics.Bitmap.CompressFormat.PNG
+                                            } else {
+                                                android.graphics.Bitmap.CompressFormat.JPEG
                                             }
+                                            bitmap.compress(format, 100, output)
                                         }
+
+                                        // Libérer la mémoire
+                                        bitmap.recycle()
 
                                         destFile.absolutePath
                                     }

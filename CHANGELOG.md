@@ -6,19 +6,36 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ## [1.1.0] - 26-11-25
-Changements iOS:
-- Ajout de DispatchQueue.main.async dans le callback de requestAccess
 
-Changements Android:
-- Ajout explicite de la permission CAMERA dans AndroidManifest.xml
+### Ajouts
+- **Support PNG** : Nouveau paramètre `outputFormat` dans `CaptureHelperScanOptions`
+  - Permet de choisir entre JPEG (par défaut) et PNG
+  - JPEG : Plus léger, compression avec perte
+  - PNG : Plus lourd, compression sans perte, idéal pour schémas/diagrammes
+- Nouvel enum `OutputFormat` avec valeurs `jpeg` et `png`
 
-## [1.0.1] - 20-11-25
+### Améliorations
+- Compression d'images supporte maintenant PNG et JPEG automatiquement
+- Détection automatique du format d'image lors de la compression
 
-Downgrade sdk: ^3.9.0 -> ^3.8.0
+## [1.0.2]
+- **iOS** : Fix crash au premier scan sur appareil réel
+  - Ajout de `DispatchQueue.main.async` dans le callback de permission caméra
+- **Android** : Ajout explicite de la permission CAMERA dans AndroidManifest.xml
+  - Améliore la clarté et la compatibilité
 
-## [1.0.0] - 19-11-25
+###  Flutter
+- Downgrade sdk: ^3.9.0 -> ^3.8.0
 
-Version initiale du plugin avec support complet iOS et Android.
+## [1.0.1]
+
+###  Flutter
+- Downgrade sdk: ^3.9.0 -> ^3.8.0
+
+## [1.0.0]
+### iOS | Android | Flutter
+
+- Version initiale du plugin avec support complet iOS et Android.
 
 ### Fonctionnalités
 
@@ -82,11 +99,10 @@ Version initiale du plugin avec support complet iOS et Android.
 
 - iOS ne fonctionne que sur appareil physique
 - Android nécessite Google Play Services
-- Format de sortie : JPEG uniquement
 - Un seul scan actif à la fois
 
 ### Roadmap
 
-- **Version 1.1** : Support PNG, configuration qualité avancée
-- **Version 1.2** : OCR optionnel, génération PDF
+- **Version 1.1** : ✅ Support PNG (complété)
+- **Version 1.2** : Configuration qualité avancée (maxPageCount, allowGalleryImport, résolution), OCR optionnel, génération PDF
 - **Version 2.0** : Support Web, reconnaissance de documents

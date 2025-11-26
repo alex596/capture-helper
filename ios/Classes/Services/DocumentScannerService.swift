@@ -6,6 +6,7 @@ import VisionKit
 class DocumentScannerService: NSObject {
     private weak var presentingViewController: UIViewController?
     private var scanCompletion: ((Result<[URL], Error>) -> Void)?
+    private var outputFormat: String = "jpeg"
 
     enum ScanError: Error {
         case notAvailable
@@ -27,8 +28,9 @@ class DocumentScannerService: NSObject {
         }
     }
 
-    init(presentingViewController: UIViewController?) {
+    init(presentingViewController: UIViewController?, outputFormat: String = "jpeg") {
         self.presentingViewController = presentingViewController
+        self.outputFormat = outputFormat
         super.init()
     }
 
@@ -66,10 +68,22 @@ class DocumentScannerService: NSObject {
     private func saveImage(_ image: UIImage, index: Int) -> URL? {
         let tempDirectory = FileManager.default.temporaryDirectory
         let timestamp = Int(Date().timeIntervalSince1970 * 1000)
-        let filename = "scan_\(timestamp)_\(index).jpg"
+
+        // Déterminer l'extension et les données selon le format
+        let (fileExtension, imageData): (String, Data?)
+
+        if outputFormat == "png" {
+            fileExtension = "png"
+            imageData = image.pngData()
+        } else {
+            fileExtension = "jpg"
+            imageData = image.jpegData(compressionQuality: 1.0)
+        }
+
+        let filename = "scan_\(timestamp)_\(index).\(fileExtension)"
         let fileURL = tempDirectory.appendingPathComponent(filename)
 
-        guard let data = image.jpegData(compressionQuality: 1.0) else {
+        guard let data = imageData else {
             return nil
         }
 

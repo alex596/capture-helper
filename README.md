@@ -164,8 +164,9 @@ Scanner et compresser automatiquement les images pendant le scan :
 ```dart
 final result = await captureHelper.scanDocument(
   options: const CaptureHelperScanOptions(
-    autoCompress: true,          // Active la compression automatique
-    compressionQuality: 70,       // Qualité de compression (0-100)
+    autoCompress: true,           // Active la compression automatique
+    compressionQuality: 70,        // Qualité de compression (0-100)
+    outputFormat: OutputFormat.jpeg, // Format de sortie (jpeg ou png)
   ),
 );
 
@@ -174,6 +175,41 @@ if (result.success) {
   print('📁 ${result.imageCount} image(s) dans: ${result.imagePaths}');
 }
 ```
+
+### 🎨 Choisir le format de sortie (JPEG vs PNG)
+
+Le plugin supporte deux formats de sortie :
+
+```dart
+// Format JPEG (par défaut) - Plus léger, compression avec perte
+final resultJPEG = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    outputFormat: OutputFormat.jpeg,
+    compressionQuality: 80,
+  ),
+);
+
+// Format PNG - Plus lourd, compression sans perte
+// Idéal pour schémas, diagrammes, ou quand la netteté est cruciale
+final resultPNG = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    outputFormat: OutputFormat.png,
+    // Note: compressionQuality n'a pas d'effet sur PNG (toujours qualité maximale)
+  ),
+);
+```
+
+**Quand utiliser PNG ?**
+- Schémas techniques, diagrammes, graphiques
+- Documents avec texte très fin à OCR
+- Besoin de qualité maximale sans artefacts
+- ⚠️ Fichiers 3-5x plus lourds que JPEG
+
+**Quand utiliser JPEG ?**
+- Documents scannés standards (recommandé)
+- Photos de documents
+- Fichiers plus légers pour le stockage/partage
+- Qualité largement suffisante pour la lecture
 
 ### 🗜️ Compresser une image existante
 
