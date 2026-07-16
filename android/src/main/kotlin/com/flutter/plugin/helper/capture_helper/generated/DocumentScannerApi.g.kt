@@ -2,6 +2,7 @@
 // See also: https://pub.dev/packages/pigeon
 @file:Suppress("UNCHECKED_CAST", "ArrayInDataClass")
 
+package com.flutter.plugin.helper.capture_helper.generated
 
 import android.util.Log
 import io.flutter.plugin.common.BasicMessageChannel
@@ -45,33 +46,110 @@ class FlutterError (
   val details: Any? = null
 ) : Throwable()
 
+/** Mode de capture du scanner */
+enum class ScanMode(val raw: Int) {
+  /** Capture automatique après stabilisation + bouton manuel disponible */
+  AUTO(0),
+  /** Capture manuelle uniquement (bouton) */
+  MANUAL(1);
+
+  companion object {
+    fun ofRaw(raw: Int): ScanMode? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /**
  * Options pour la numérisation de documents
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
 data class ScanOptions (
+  /** Mode de capture (auto ou manuel) */
+  val scanMode: ScanMode,
+  /** Nombre de pages à scanner (1 = single page, >1 = multi-pages) */
+  val pageLimit: Long,
   /** Si true, compresse automatiquement l'image après la capture */
   val autoCompress: Boolean,
   /** Qualité de compression (0-100) si autoCompress est true */
   val compressionQuality: Long,
   /** Format de sortie : 'jpeg' ou 'png' */
-  val outputFormat: String
+  val outputFormat: String,
+  /** Seuil minimum de netteté (0-100, 0 = désactivé) */
+  val minSharpnessScore: Long,
+  /** Seuil minimum de luminosité (0-100, 0 = désactivé) */
+  val minBrightnessScore: Long,
+  /** Surface minimum du document dans l'image (0-100%, 0 = désactivé) */
+  val minDocumentCoverage: Long,
+  /** Délai en secondes avant capture automatique (mode auto uniquement) */
+  val autoCaptureDelay: Double
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): ScanOptions {
-      val autoCompress = pigeonVar_list[0] as Boolean
-      val compressionQuality = pigeonVar_list[1] as Long
-      val outputFormat = pigeonVar_list[2] as String
-      return ScanOptions(autoCompress, compressionQuality, outputFormat)
+      val scanMode = pigeonVar_list[0] as ScanMode
+      val pageLimit = pigeonVar_list[1] as Long
+      val autoCompress = pigeonVar_list[2] as Boolean
+      val compressionQuality = pigeonVar_list[3] as Long
+      val outputFormat = pigeonVar_list[4] as String
+      val minSharpnessScore = pigeonVar_list[5] as Long
+      val minBrightnessScore = pigeonVar_list[6] as Long
+      val minDocumentCoverage = pigeonVar_list[7] as Long
+      val autoCaptureDelay = pigeonVar_list[8] as Double
+      return ScanOptions(scanMode, pageLimit, autoCompress, compressionQuality, outputFormat, minSharpnessScore, minBrightnessScore, minDocumentCoverage, autoCaptureDelay)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
+      scanMode,
+      pageLimit,
       autoCompress,
       compressionQuality,
       outputFormat,
+      minSharpnessScore,
+      minBrightnessScore,
+      minDocumentCoverage,
+      autoCaptureDelay,
+    )
+  }
+}
+
+/**
+ * Informations de qualité d'une image scannée
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class ImageQuality (
+  /** Score de netteté (0-100) */
+  val sharpnessScore: Long,
+  /** Score de luminosité (0-100) */
+  val brightnessScore: Long,
+  /** Pourcentage de couverture du document (0-100) */
+  val documentCoverage: Long,
+  /** Si l'image passe tous les critères de qualité */
+  val isAcceptable: Boolean,
+  /** Message décrivant le problème de qualité (si non acceptable) */
+  val qualityIssue: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ImageQuality {
+      val sharpnessScore = pigeonVar_list[0] as Long
+      val brightnessScore = pigeonVar_list[1] as Long
+      val documentCoverage = pigeonVar_list[2] as Long
+      val isAcceptable = pigeonVar_list[3] as Boolean
+      val qualityIssue = pigeonVar_list[4] as String?
+      return ImageQuality(sharpnessScore, brightnessScore, documentCoverage, isAcceptable, qualityIssue)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      sharpnessScore,
+      brightnessScore,
+      documentCoverage,
+      isAcceptable,
+      qualityIssue,
     )
   }
 }
@@ -149,16 +227,26 @@ private open class DocumentScannerApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          ScanOptions.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          ScanMode.ofRaw(it.toInt())
         }
       }
       130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ScanResult.fromList(it)
+          ScanOptions.fromList(it)
         }
       }
       131.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ImageQuality.fromList(it)
+        }
+      }
+      132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ScanResult.fromList(it)
+        }
+      }
+      133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           CompressionResult.fromList(it)
         }
@@ -168,16 +256,24 @@ private open class DocumentScannerApiPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is ScanOptions -> {
+      is ScanMode -> {
         stream.write(129)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw)
       }
-      is ScanResult -> {
+      is ScanOptions -> {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is CompressionResult -> {
+      is ImageQuality -> {
         stream.write(131)
+        writeValue(stream, value.toList())
+      }
+      is ScanResult -> {
+        stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is CompressionResult -> {
+        stream.write(133)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)

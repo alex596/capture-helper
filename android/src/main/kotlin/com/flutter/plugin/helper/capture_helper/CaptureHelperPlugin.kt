@@ -3,105 +3,72 @@ package com.flutter.plugin.helper.capture_helper
 import android.app.Activity
 import android.content.Intent
 import androidx.annotation.NonNull
+import com.flutter.plugin.helper.capture_helper.generated.CompressionResult
+import com.flutter.plugin.helper.capture_helper.generated.DocumentScannerApi
+import com.flutter.plugin.helper.capture_helper.generated.ScanOptions
+import com.flutter.plugin.helper.capture_helper.generated.ScanResult
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.PluginRegistry
 import java.io.File
 import java.io.FileOutputStream
 
 /** CaptureHelperPlugin */
-class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener {
+class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener, DocumentScannerApi {
 
     private var activity: Activity? = null
-    private var pendingResult: BasicMessageChannel.Reply<Any?>? = null
+    private var pendingCallback: ((Result<ScanResult>) -> Unit)? = null
     private var outputFormat: String = "jpeg"
-    private lateinit var scanChannel: BasicMessageChannel<Any?>
-    private lateinit var availabilityChannel: BasicMessageChannel<Any?>
+    private var pageLimit: Int = 10
 
     companion object {
         private const val REQUEST_CODE_SCAN = 100
     }
 
-    private lateinit var compressImageChannel: BasicMessageChannel<Any?>
-
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         android.util.Log.d("CaptureHelper", "Plugin attached to engine")
-        val codec = PigeonCodec()
-
-        // Setup scan document channel
-        scanChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.scanDocument",
-            codec
-        )
-        scanChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received scanDocument message: $message")
-            handleScanDocument(message, reply)
-        }
-
-        // Setup availability check channel
-        availabilityChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.isScanningAvailable",
-            codec
-        )
-        availabilityChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received isScanningAvailable message: $message")
-            handleIsScanningAvailable(reply)
-        }
-
-        // Setup compress image channel
-        compressImageChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressImage",
-            codec
-        )
-        compressImageChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received compressImage message: $message")
-            handleCompressImage(message, reply)
-        }
+        DocumentScannerApi.setUp(flutterPluginBinding.binaryMessenger, this)
     }
 
-    private fun handleIsScanningAvailable(reply: BasicMessageChannel.Reply<Any?>) {
+    override fun isScanningAvailable(): Boolean {
         // ML Kit Document Scanner is available on Android API 21+
-        reply.reply(listOf(true))
+        return true
     }
 
-    private fun handleScanDocument(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
+    override fun scanDocument(options: ScanOptions, callback: (Result<ScanResult>) -> Unit) {
+        android.util.Log.d("CaptureHelper", "scanDocument called with options: $options")
+
         if (activity == null) {
-            reply.reply(listOf(
-                "NO_ACTIVITY",
-                "Activity not available",
-                null
-            ))
+            callback(Result.success(ScanResult(
+                imagePaths = emptyList(),
+                success = false,
+                errorMessage = "Activity not available"
+            )))
             return
         }
 
         try {
-            // Extraire le format de sortie des options
-            @Suppress("UNCHECKED_CAST")
-            val options = message as? Map<String, Any?>
-            outputFormat = options?.get("outputFormat") as? String ?: "jpeg"
-
-            startScanning(reply)
+            outputFormat = options.outputFormat
+            pageLimit = options.pageLimit.toInt()
+            startScanning(callback)
         } catch (e: Exception) {
-            reply.reply(listOf(
-                "ERROR",
-                "Failed to start scanning: ${e.message}",
-                null
-            ))
+            callback(Result.success(ScanResult(
+                imagePaths = emptyList(),
+                success = false,
+                errorMessage = "Failed to start scanning: ${e.message}"
+            )))
         }
     }
 
-    private fun startScanning(reply: BasicMessageChannel.Reply<Any?>) {
+    private fun startScanning(callback: (Result<ScanResult>) -> Unit) {
+        val effectivePageLimit = pageLimit.coerceIn(1, 10)
         val options = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(false)
-            .setPageLimit(10)
+            .setPageLimit(effectivePageLimit)
             .setResultFormats(
                 GmsDocumentScannerOptions.RESULT_FORMAT_JPEG,
                 GmsDocumentScannerOptions.RESULT_FORMAT_PDF
@@ -111,7 +78,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
         val scanner = GmsDocumentScanning.getClient(options)
 
-        pendingResult = reply
+        pendingCallback = callback
 
         scanner.getStartScanIntent(activity!!)
             .addOnSuccessListener { intentSender ->
@@ -125,72 +92,35 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                         0
                     )
                 } catch (e: Exception) {
-                    pendingResult?.reply(listOf(
-                        "SCAN_ERROR",
-                        "Failed to start scanner: ${e.message}",
-                        null
-                    ))
-                    pendingResult = null
+                    pendingCallback?.invoke(Result.success(ScanResult(
+                        imagePaths = emptyList(),
+                        success = false,
+                        errorMessage = "Failed to start scanner: ${e.message}"
+                    )))
+                    pendingCallback = null
                 }
             }
             .addOnFailureListener { e ->
-                pendingResult?.reply(listOf(
-                    "SCAN_ERROR",
-                    "Failed to get scan intent: ${e.message}",
-                    null
-                ))
-                pendingResult = null
+                pendingCallback?.invoke(Result.success(ScanResult(
+                    imagePaths = emptyList(),
+                    success = false,
+                    errorMessage = "Failed to get scan intent: ${e.message}"
+                )))
+                pendingCallback = null
             }
     }
 
-    private fun handleCompressImage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
-        try {
-            @Suppress("UNCHECKED_CAST")
-            val args = message as? List<Any?>
-
-            if (args == null || args.size < 2) {
-                reply.reply(listOf(
-                    "INVALID_ARGS",
-                    "Invalid arguments for compressImage",
-                    null
-                ))
-                return
-            }
-
-            val imagePath = args[0] as? String
-            val quality = (args[1] as? Number)?.toInt() ?: 80
-
-            if (imagePath == null) {
-                reply.reply(listOf(
-                    "INVALID_PATH",
-                    "Image path is null",
-                    null
-                ))
-                return
-            }
-
-            compressImage(imagePath, quality, reply)
-        } catch (e: Exception) {
-            reply.reply(listOf(
-                "ERROR",
-                "Failed to compress image: ${e.message}",
-                null
-            ))
-        }
-    }
-
-    private fun compressImage(imagePath: String, quality: Int, reply: BasicMessageChannel.Reply<Any?>) {
+    override fun compressImage(imagePath: String, quality: Long, callback: (Result<CompressionResult>) -> Unit) {
         try {
             val sourceFile = File(imagePath)
             if (!sourceFile.exists()) {
-                val result = mapOf(
-                    "outputPath" to null,
-                    "originalSize" to 0L,
-                    "compressedSize" to 0L,
-                    "success" to false,
-                    "errorMessage" to "Source file does not exist"
-                )
-                reply.reply(listOf(result))
+                callback(Result.success(CompressionResult(
+                    outputPath = null,
+                    originalSize = 0L,
+                    compressedSize = 0L,
+                    success = false,
+                    errorMessage = "Source file does not exist"
+                )))
                 return
             }
 
@@ -199,14 +129,13 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
             // Read and decode the image
             val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath)
             if (bitmap == null) {
-                val result = mapOf(
-                    "outputPath" to null,
-                    "originalSize" to originalSize,
-                    "compressedSize" to 0L,
-                    "success" to false,
-                    "errorMessage" to "Failed to decode image"
-                )
-                reply.reply(listOf(result))
+                callback(Result.success(CompressionResult(
+                    outputPath = null,
+                    originalSize = originalSize,
+                    compressedSize = 0L,
+                    success = false,
+                    errorMessage = "Failed to decode image"
+                )))
                 return
             }
 
@@ -227,7 +156,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
             // PNG: qualité ignorée (compression sans perte)
             // JPEG: qualité utilisée
             FileOutputStream(outputFile).use { out ->
-                bitmap.compress(compressFormat, if (isPNG) 100 else quality, out)
+                bitmap.compress(compressFormat, if (isPNG) 100 else quality.toInt(), out)
             }
 
             // Recycle bitmap to free memory
@@ -235,30 +164,39 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
             val compressedSize = outputFile.length()
 
-            val result = mapOf(
-                "outputPath" to outputFile.absolutePath,
-                "originalSize" to originalSize,
-                "compressedSize" to compressedSize,
-                "success" to true,
-                "errorMessage" to null
-            )
-            reply.reply(listOf(result))
+            callback(Result.success(CompressionResult(
+                outputPath = outputFile.absolutePath,
+                originalSize = originalSize,
+                compressedSize = compressedSize,
+                success = true,
+                errorMessage = null
+            )))
 
         } catch (e: Exception) {
-            val result = mapOf(
-                "outputPath" to null,
-                "originalSize" to 0L,
-                "compressedSize" to 0L,
-                "success" to false,
-                "errorMessage" to "Compression failed: ${e.message}"
-            )
-            reply.reply(listOf(result))
+            callback(Result.success(CompressionResult(
+                outputPath = null,
+                originalSize = 0L,
+                compressedSize = 0L,
+                success = false,
+                errorMessage = "Compression failed: ${e.message}"
+            )))
         }
+    }
+
+    override fun compressPdf(pdfPath: String, quality: Long, callback: (Result<CompressionResult>) -> Unit) {
+        // PDF compression not implemented yet
+        callback(Result.success(CompressionResult(
+            outputPath = null,
+            originalSize = 0L,
+            compressedSize = 0L,
+            success = false,
+            errorMessage = "PDF compression not implemented"
+        )))
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == REQUEST_CODE_SCAN) {
-            if (pendingResult == null) return false
+            if (pendingCallback == null) return false
 
             when (resultCode) {
                 Activity.RESULT_OK -> {
@@ -267,13 +205,11 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                         val pages = scanResult?.pages ?: emptyList()
 
                         if (pages.isEmpty()) {
-                            // Return ScanResult: [imagePaths, success, errorMessage]
-                            val result = mapOf(
-                                "imagePaths" to emptyList<String>(),
-                                "success" to false,
-                                "errorMessage" to "No pages scanned"
-                            )
-                            pendingResult?.reply(listOf(result))
+                            pendingCallback?.invoke(Result.success(ScanResult(
+                                imagePaths = emptyList(),
+                                success = false,
+                                errorMessage = "No pages scanned"
+                            )))
                         } else {
                             try {
                                 val imagePaths = pages.mapNotNull { page ->
@@ -307,58 +243,51 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                                     }
                                 }
 
-                                val result = mapOf(
-                                    "imagePaths" to imagePaths,
-                                    "success" to true,
-                                    "errorMessage" to null
-                                )
-                                pendingResult?.reply(listOf(result))
+                                pendingCallback?.invoke(Result.success(ScanResult(
+                                    imagePaths = imagePaths,
+                                    success = true,
+                                    errorMessage = null
+                                )))
                             } catch (e: Exception) {
-                                val result = mapOf(
-                                    "imagePaths" to emptyList<String>(),
-                                    "success" to false,
-                                    "errorMessage" to "Failed to save images: ${e.message}"
-                                )
-                                pendingResult?.reply(listOf(result))
+                                pendingCallback?.invoke(Result.success(ScanResult(
+                                    imagePaths = emptyList(),
+                                    success = false,
+                                    errorMessage = "Failed to save images: ${e.message}"
+                                )))
                             }
                         }
                     } else {
-                        val result = mapOf(
-                            "imagePaths" to emptyList<String>(),
-                            "success" to false,
-                            "errorMessage" to "No data returned"
-                        )
-                        pendingResult?.reply(listOf(result))
+                        pendingCallback?.invoke(Result.success(ScanResult(
+                            imagePaths = emptyList(),
+                            success = false,
+                            errorMessage = "No data returned"
+                        )))
                     }
                 }
                 Activity.RESULT_CANCELED -> {
-                    val result = mapOf(
-                        "imagePaths" to emptyList<String>(),
-                        "success" to false,
-                        "errorMessage" to "User cancelled"
-                    )
-                    pendingResult?.reply(listOf(result))
+                    pendingCallback?.invoke(Result.success(ScanResult(
+                        imagePaths = emptyList(),
+                        success = false,
+                        errorMessage = "User cancelled"
+                    )))
                 }
                 else -> {
-                    val result = mapOf(
-                        "imagePaths" to emptyList<String>(),
-                        "success" to false,
-                        "errorMessage" to "Unknown error"
-                    )
-                    pendingResult?.reply(listOf(result))
+                    pendingCallback?.invoke(Result.success(ScanResult(
+                        imagePaths = emptyList(),
+                        success = false,
+                        errorMessage = "Unknown error"
+                    )))
                 }
             }
 
-            pendingResult = null
+            pendingCallback = null
             return true
         }
         return false
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        scanChannel.setMessageHandler(null)
-        availabilityChannel.setMessageHandler(null)
-        compressImageChannel.setMessageHandler(null)
+        DocumentScannerApi.setUp(binding.binaryMessenger, null)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {

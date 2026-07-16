@@ -44,10 +44,27 @@ class CaptureHelper {
   /// - Statut de l'opération
   /// - Message d'erreur éventuel
   ///
-  /// Exemple d'utilisation :
+  /// Exemples d'utilisation :
+  ///
+  /// Scan simple d'une page (mode manuel par défaut) :
+  /// ```dart
+  /// final result = await CaptureHelper().scanDocument();
+  /// ```
+  ///
+  /// Scan automatique d'une page :
+  /// ```dart
+  /// final result = await CaptureHelper().scanDocument(
+  ///   options: CaptureHelperScanOptions.singlePageAuto,
+  /// );
+  /// ```
+  ///
+  /// Scan multi-pages avec contrôle de qualité :
   /// ```dart
   /// final result = await CaptureHelper().scanDocument(
   ///   options: CaptureHelperScanOptions(
+  ///     captureMode: CaptureMode.auto,
+  ///     pageLimit: 5,
+  ///     minSharpnessScore: 40,
   ///     autoCompress: true,
   ///     compressionQuality: 85,
   ///   ),
@@ -64,9 +81,15 @@ class CaptureHelper {
   }) async {
     try {
       final pigeonOptions = ScanOptions(
+        scanMode: options.captureMode == CaptureMode.auto ? ScanMode.auto : ScanMode.manual,
+        pageLimit: options.pageLimit,
         autoCompress: options.autoCompress,
         compressionQuality: options.compressionQuality,
         outputFormat: options.outputFormat.name, // 'jpeg' ou 'png'
+        minSharpnessScore: options.minSharpnessScore,
+        minBrightnessScore: options.minBrightnessScore,
+        minDocumentCoverage: options.minDocumentCoverage,
+        autoCaptureDelay: options.autoCaptureDelay,
       );
 
       final pigeonResult = await _api.scanDocument(pigeonOptions);

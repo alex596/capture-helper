@@ -64,35 +64,116 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
+/// Mode de capture du scanner
+enum ScanMode: Int {
+  /// Capture automatique après stabilisation + bouton manuel disponible
+  case auto = 0
+  /// Capture manuelle uniquement (bouton)
+  case manual = 1
+}
+
 /// Options pour la numérisation de documents
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct ScanOptions {
+  /// Mode de capture (auto ou manuel)
+  var scanMode: ScanMode
+  /// Nombre de pages à scanner (1 = single page, >1 = multi-pages)
+  var pageLimit: Int64
   /// Si true, compresse automatiquement l'image après la capture
   var autoCompress: Bool
   /// Qualité de compression (0-100) si autoCompress est true
   var compressionQuality: Int64
   /// Format de sortie : 'jpeg' ou 'png'
   var outputFormat: String
+  /// Seuil minimum de netteté (0-100, 0 = désactivé)
+  var minSharpnessScore: Int64
+  /// Seuil minimum de luminosité (0-100, 0 = désactivé)
+  var minBrightnessScore: Int64
+  /// Surface minimum du document dans l'image (0-100%, 0 = désactivé)
+  var minDocumentCoverage: Int64
+  /// Délai en secondes avant capture automatique (mode auto uniquement)
+  var autoCaptureDelay: Double
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> ScanOptions? {
-    let autoCompress = pigeonVar_list[0] as! Bool
-    let compressionQuality = pigeonVar_list[1] as! Int64
-    let outputFormat = pigeonVar_list[2] as! String
+    let scanMode = pigeonVar_list[0] as! ScanMode
+    let pageLimit = pigeonVar_list[1] as! Int64
+    let autoCompress = pigeonVar_list[2] as! Bool
+    let compressionQuality = pigeonVar_list[3] as! Int64
+    let outputFormat = pigeonVar_list[4] as! String
+    let minSharpnessScore = pigeonVar_list[5] as! Int64
+    let minBrightnessScore = pigeonVar_list[6] as! Int64
+    let minDocumentCoverage = pigeonVar_list[7] as! Int64
+    let autoCaptureDelay = pigeonVar_list[8] as! Double
 
     return ScanOptions(
+      scanMode: scanMode,
+      pageLimit: pageLimit,
       autoCompress: autoCompress,
       compressionQuality: compressionQuality,
-      outputFormat: outputFormat
+      outputFormat: outputFormat,
+      minSharpnessScore: minSharpnessScore,
+      minBrightnessScore: minBrightnessScore,
+      minDocumentCoverage: minDocumentCoverage,
+      autoCaptureDelay: autoCaptureDelay
     )
   }
   func toList() -> [Any?] {
     return [
+      scanMode,
+      pageLimit,
       autoCompress,
       compressionQuality,
       outputFormat,
+      minSharpnessScore,
+      minBrightnessScore,
+      minDocumentCoverage,
+      autoCaptureDelay,
+    ]
+  }
+}
+
+/// Informations de qualité d'une image scannée
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ImageQuality {
+  /// Score de netteté (0-100)
+  var sharpnessScore: Int64
+  /// Score de luminosité (0-100)
+  var brightnessScore: Int64
+  /// Pourcentage de couverture du document (0-100)
+  var documentCoverage: Int64
+  /// Si l'image passe tous les critères de qualité
+  var isAcceptable: Bool
+  /// Message décrivant le problème de qualité (si non acceptable)
+  var qualityIssue: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ImageQuality? {
+    let sharpnessScore = pigeonVar_list[0] as! Int64
+    let brightnessScore = pigeonVar_list[1] as! Int64
+    let documentCoverage = pigeonVar_list[2] as! Int64
+    let isAcceptable = pigeonVar_list[3] as! Bool
+    let qualityIssue: String? = nilOrValue(pigeonVar_list[4])
+
+    return ImageQuality(
+      sharpnessScore: sharpnessScore,
+      brightnessScore: brightnessScore,
+      documentCoverage: documentCoverage,
+      isAcceptable: isAcceptable,
+      qualityIssue: qualityIssue
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      sharpnessScore,
+      brightnessScore,
+      documentCoverage,
+      isAcceptable,
+      qualityIssue,
     ]
   }
 }
@@ -177,10 +258,18 @@ private class DocumentScannerApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
-      return ScanOptions.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return ScanMode(rawValue: enumResultAsInt)
+      }
+      return nil
     case 130:
-      return ScanResult.fromList(self.readValue() as! [Any?])
+      return ScanOptions.fromList(self.readValue() as! [Any?])
     case 131:
+      return ImageQuality.fromList(self.readValue() as! [Any?])
+    case 132:
+      return ScanResult.fromList(self.readValue() as! [Any?])
+    case 133:
       return CompressionResult.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -190,14 +279,20 @@ private class DocumentScannerApiPigeonCodecReader: FlutterStandardReader {
 
 private class DocumentScannerApiPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? ScanOptions {
+    if let value = value as? ScanMode {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? ScanResult {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? ScanOptions {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? CompressionResult {
+    } else if let value = value as? ImageQuality {
       super.writeByte(131)
+      super.writeValue(value.toList())
+    } else if let value = value as? ScanResult {
+      super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? CompressionResult {
+      super.writeByte(133)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)

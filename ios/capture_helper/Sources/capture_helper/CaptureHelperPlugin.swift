@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 
 public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
-    private var scannerService: DocumentScannerService?
+    private var scannerCoordinator: DocumentScannerCoordinator?
     private let imageCompressionService = ImageCompressionService()
     private let pdfCompressionService = PDFCompressionService()
 
@@ -50,54 +50,65 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
             return
         }
 
-        // Créer le service de numérisation
-        if #available(iOS 13.0, *) {
-            let scanner = DocumentScannerService(
-                presentingViewController: viewController,
-                outputFormat: options.outputFormat
-            )
-            self.scannerService = scanner
-
-            scanner.scanDocument { [weak self] result in
-                guard let self = self else { return }
-
-                switch result {
-                case .success(let urls):
-                    var imagePaths = urls.map { $0.path }
-
-                    // Compression automatique si demandée
-                    if options.autoCompress {
-                        imagePaths = self.compressScannedImages(
-                            imagePaths,
-                            quality: Int(options.compressionQuality)
-                        )
-                    }
-
-                    let scanResult = ScanResult(
-                        imagePaths: imagePaths,
-                        success: true,
-                        errorMessage: nil
-                    )
-                    completion(.success(scanResult))
-
-                case .failure(let error):
-                    let scanResult = ScanResult(
-                        imagePaths: [],
-                        success: false,
-                        errorMessage: error.localizedDescription
-                    )
-                    completion(.success(scanResult))
-                }
-
-                self.scannerService = nil
-            }
-        } else {
+        // Vérifier iOS 13+
+        guard #available(iOS 13.0, *) else {
             let scanResult = ScanResult(
                 imagePaths: [],
                 success: false,
                 errorMessage: "Document scanning requires iOS 13.0 or later"
             )
             completion(.success(scanResult))
+            return
+        }
+
+        // Utiliser le nouveau coordinateur unifié
+        performUnifiedScan(
+            viewController: viewController,
+            options: options,
+            completion: completion
+        )
+    }
+
+    /// Scan unifié avec le nouveau coordinateur (tous les modes)
+    @available(iOS 13.0, *)
+    private func performUnifiedScan(
+        viewController: UIViewController,
+        options: ScanOptions,
+        completion: @escaping (Result<ScanResult, Error>) -> Void
+    ) {
+        let coordinator = DocumentScannerCoordinator(presentingViewController: viewController)
+        self.scannerCoordinator = coordinator
+
+        coordinator.startScanning(with: options) { [weak self] result in
+            guard let self = self else { return }
+
+            if result.success {
+                var imagePaths = result.imageURLs.map { $0.path }
+
+                // Compression automatique si demandée
+                if options.autoCompress {
+                    imagePaths = self.compressScannedImages(
+                        imagePaths,
+                        quality: Int(options.compressionQuality)
+                    )
+                }
+
+                let scanResult = ScanResult(
+                    imagePaths: imagePaths,
+                    success: true,
+                    errorMessage: nil
+                )
+                completion(.success(scanResult))
+            } else {
+                let scanResult = ScanResult(
+                    imagePaths: [],
+                    success: false,
+                    errorMessage: result.errorMessage ?? "Unknown error"
+                )
+                completion(.success(scanResult))
+            }
+
+            self.scannerCoordinator = nil
         }
     }
 

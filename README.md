@@ -31,6 +31,10 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 
 - ✅ **Numérisation de documents** avec détection automatique des bords
 - ✅ **Support multi-pages** en une seule session
+- ✅ **4 modes de capture** : Auto/Manuel × Single/Multi-pages
+- ✅ **Auto-capture** avec timer visuel après stabilisation du document
+- ✅ **Contrôle qualité** : netteté, luminosité, couverture du document
+- ✅ **Ajustement des coins** avec correction de perspective
 - ✅ **Compression d'images** avec contrôle de la qualité
 - ✅ **Compression PDF** pour réduire la taille des fichiers
 - ✅ **Interface native** sur iOS et Android
@@ -383,8 +387,52 @@ Options de configuration pour la numérisation.
 ```dart
 CaptureHelperScanOptions({
   bool autoCompress = false,
-  int compressionQuality = 80, // 0-100
+  int compressionQuality = 80,    // 0-100
+  OutputFormat outputFormat = OutputFormat.jpeg,
+
+  // Mode de capture (iOS)
+  CaptureMode captureMode = CaptureMode.manual,  // auto ou manual
+  int pageLimit = 1,              // 1 = single page, >1 = multi-pages
+
+  // Contrôle qualité (iOS)
+  int minSharpness = 0,           // 0-100, 0 = désactivé
+  int minBrightness = 0,          // 0-100, 0 = désactivé
+  int minDocumentCoverage = 15,   // % min du document dans l'écran
+
+  // Auto-capture (iOS)
+  double autoCaptureDelay = 1.0,  // Délai en secondes avant capture auto
 })
+```
+
+#### Modes de capture (iOS)
+
+| Mode | Description |
+|------|-------------|
+| `CaptureMode.auto` | Capture automatique après stabilisation + bouton manuel disponible |
+| `CaptureMode.manual` | Capture uniquement via le bouton (par défaut) |
+
+#### Exemples de configurations
+
+```dart
+// Mode automatique single-page
+CaptureHelperScanOptions(
+  captureMode: CaptureMode.auto,
+  pageLimit: 1,
+  autoCaptureDelay: 1.5,
+)
+
+// Mode manuel multi-pages (jusqu'à 10 pages)
+CaptureHelperScanOptions(
+  captureMode: CaptureMode.manual,
+  pageLimit: 10,
+)
+
+// Avec contrôle qualité strict
+CaptureHelperScanOptions(
+  minSharpness: 50,
+  minBrightness: 40,
+  minDocumentCoverage: 30,
+)
 ```
 
 ### CaptureHelperScanResult
@@ -430,10 +478,22 @@ lib/
 │   └── generated/                   # Code généré par Pigeon
 │       └── document_scanner_api.g.dart
 
-ios/Classes/
-├── CaptureHelperPlugin.swift       # Plugin principal iOS
+ios/capture_helper/Sources/capture_helper/   # Swift Package (SPM + CocoaPods)
+├── CaptureHelperPlugin.swift        # Plugin principal iOS
+├── Scanner/                         # Module de scan personnalisé
+│   ├── CaptureViewController.swift  # Écran de capture avec overlay
+│   ├── AdjustmentViewController.swift # Ajustement des coins
+│   ├── PreviewViewController.swift  # Prévisualisation
+│   ├── RecapViewController.swift    # Récap multi-pages
+│   ├── QualityFeedbackViewController.swift # Feedback qualité
+│   ├── DocumentDetector.swift       # Détection Vision/ML
+│   ├── DocumentOverlayView.swift    # Overlay de détection
+│   ├── ImageQualityAnalyzer.swift   # Analyse qualité
+│   ├── PerspectiveCorrector.swift   # Correction perspective
+│   ├── DocumentScannerCoordinator.swift # Coordinateur de navigation
+│   ├── ScanSessionManager.swift     # Gestion de session
+│   └── SinglePageScannerCoordinator.swift
 ├── Services/
-│   ├── DocumentScannerService.swift
 │   ├── ImageCompressionService.swift
 │   ├── PDFCompressionService.swift
 │   └── PermissionManager.swift
@@ -449,6 +509,24 @@ android/src/main/kotlin/.../
 │   └── PermissionManager.kt
 └── generated/                       # Code généré par Pigeon
     └── DocumentScannerApi.g.kt
+```
+
+### Flow de capture iOS
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ CaptureVC       │───▶│ AdjustmentVC     │───▶│ PreviewVC       │
+│ (Détection +    │    │ (Ajuster coins)  │    │ (Confirmer)     │
+│  Capture)       │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        │                                              │
+        │ (si qualité insuffisante)                    │
+        ▼                                              ▼
+┌─────────────────┐                           ┌─────────────────┐
+│ QualityFeedback │                           │ RecapVC         │
+│ (Reprendre ou   │                           │ (Multi-pages)   │
+│  Conserver)     │                           │                 │
+└─────────────────┘                           └─────────────────┘
 ```
 
 ## Développement
