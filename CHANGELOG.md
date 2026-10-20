@@ -43,6 +43,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - Compatible avec les apps en `android.builtInKotlin=true` comme `false`
 - **Android** : ML Kit Document Scanner `16.0.0-beta1` → `16.0.0` (stable)
 - **Pigeon** : 22.7 → 29.0 (méthodes `@asyncCallback` pour conserver les signatures à callback)
+  - Ajout de la dépendance `meta`, requise par le code généré
 - **Lints** : `flutter_lints` 5 → 6, suppression du plugin d'analyse `custom_lint` inutilisé
 
 ### Exemple
