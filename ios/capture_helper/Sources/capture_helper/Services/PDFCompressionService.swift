@@ -113,9 +113,9 @@ class PDFCompressionService {
         }
     }
 
-    /// Crée une URL de sortie avec un suffixe
+    /// Crée une URL de sortie avec un suffixe, dans le répertoire de sortie du plugin
     private func createOutputURL(from sourceURL: URL, suffix: String) -> URL {
-        let directory = sourceURL.deletingLastPathComponent()
+        let directory = OutputDirectory.url()
         let filename = sourceURL.deletingPathExtension().lastPathComponent
         let ext = sourceURL.pathExtension
 

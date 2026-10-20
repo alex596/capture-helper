@@ -10,6 +10,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ### ⚠️ Prérequis
 - **Flutter** : Version minimale passée à Flutter 3.44 / Dart 3.12
 
+### ⚠️ Changement de comportement : stockage des fichiers
+- Tous les fichiers produits (scans et compressions) sont écrits dans un sous-dossier dédié du **cache**
+  de l'application :
+  - **iOS** : `Library/Caches/capture_helper/` (auparavant `tmp/`, et à côté de la source pour les compressions)
+  - **Android** : `cacheDir/capture_helper/` (auparavant `filesDir`, persistant)
+- Ces fichiers sont temporaires : l'application doit **copier** ceux qu'elle souhaite conserver
+
 ### Ajouts
 - **Capture automatique/manuelle** : Nouveau paramètre `useAutomaticCapture` dans `CaptureHelperScanOptions`
   - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté

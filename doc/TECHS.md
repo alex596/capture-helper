@@ -67,6 +67,7 @@ capture_helper/
 │           ├── Services/
 │           │   ├── DocumentScannerService.swift
 │           │   ├── ImageCompressionService.swift
+│           │   ├── OutputDirectory.swift     # Répertoire de sortie (cache)
 │           │   ├── PDFCompressionService.swift
 │           │   └── PermissionManager.swift
 │           └── Generated/DocumentScannerApi.g.swift
@@ -197,15 +198,16 @@ Les méthodes publiques **ne lèvent jamais d'exception** : l'appelant teste tou
    automatique ne peut pas être désactivée sur iOS : `useAutomaticCapture` est ignoré.
 4. **Résultat** : seules les `pageLimit` premières pages sont conservées (VisionKit ne permet pas de
    bloquer la prise de vue au-delà).
-5. **Enregistrement** : dans `FileManager.default.temporaryDirectory`, nommé `scan_<timestamp>_<index>.jpg`
-   (JPEG qualité 1.0) ou `.png`.
+5. **Enregistrement** : dans le répertoire de sortie du plugin (voir [Stockage des fichiers](#-stockage-des-fichiers)),
+   nommé `scan_<timestamp>_<index>.jpg` (JPEG qualité 1.0) ou `.png`.
 6. **Compression automatique** : si `autoCompress` vaut `true`, chaque image passe par
    `ImageCompressionService`. En cas d'échec, l'image d'origine est conservée.
 
 ### Compression
 
 - **Image** (`ImageCompressionService`) : JPEG recompressé avec `quality / 100`. Pour un PNG, la qualité
-  est sans effet (compression sans perte). Le fichier de sortie est écrit dans le même dossier que la source.
+  est sans effet (compression sans perte). Le fichier de sortie `<nom source>_compressed.<ext>` est écrit
+  dans le répertoire de sortie du plugin, quel que soit l'emplacement de la source.
 - **PDF** (`PDFCompressionService`) : chaque page est rendue en image (`UIGraphicsImageRenderer`),
   recompressée en JPEG, puis réassemblée dans un nouveau PDF (`UIGraphicsBeginPDFContextToData`). Le texte
   du PDF n'est donc plus sélectionnable après compression.
@@ -252,7 +254,8 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
    - `setScannerMode(SCANNER_MODE_FULL)` si `useAutomaticCapture`, sinon `SCANNER_MODE_BASE`
 3. **Lancement** : `getStartScanIntent(activity)` puis `startIntentSenderForResult(..., REQUEST_CODE_SCAN = 100)`.
 4. **Résultat** (`onActivityResult`) : chaque page (`imageUri`) est décodée en `Bitmap` puis réencodée en
-   JPEG qualité 100 ou en PNG, dans `context.filesDir`, sous le nom `scan_<timestamp>_<index>.jpg|png`.
+   JPEG qualité 100 ou en PNG, dans le répertoire de sortie du plugin, sous le nom
+   `scan_<timestamp>_<index>.jpg|png`.
 5. **Compression automatique** : si `autoCompress` vaut `true`, chaque image passe par la même logique
    que `compressImage`. En cas d'échec, l'image d'origine est conservée (même comportement qu'iOS).
 
@@ -264,7 +267,8 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
 ### Compression
 
 - **Image** : `BitmapFactory.decodeFile` puis `Bitmap.compress` (JPEG avec la qualité demandée, PNG sans
-  perte), dans `filesDir` sous le nom `<nom source>_compressed.jpg|png` (même nommage qu'iOS).
+  perte), dans le répertoire de sortie du plugin, sous le nom `<nom source>_compressed.jpg|png` (même
+  nommage qu'iOS).
 - **PDF** : non supporté. `compressPdf` retourne un `CompressionResult` en échec
   (`"PDF compression is not supported on Android"`).
 
@@ -276,6 +280,34 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
 - Seule permission : `android.permission.CAMERA` (`uses-feature camera` non requis). Pas de permission de
   stockage, car les fichiers restent dans le répertoire privé de l'app.
 
+## 💾 Stockage des fichiers
+
+Tous les fichiers produits par le plugin (pages scannées et fichiers compressés) sont écrits dans un
+sous-dossier dédié du **cache** de l'application :
+
+| Plateforme | Répertoire | Implémentation |
+|------------|-----------|----------------|
+| iOS | `Library/Caches/capture_helper/` | `OutputDirectory.url()` |
+| Android | `cacheDir/capture_helper/` | `CaptureHelperPlugin.outputDirectory(context)` |
+
+**Pourquoi le cache ?**
+- Le plugin renvoie des **chemins de fichiers** destinés à être consommés tout de suite (envoi, affichage,
+  génération de PDF…). C'est la convention des plugins qui renvoient des fichiers (`image_picker`,
+  `file_picker`).
+- **Pas d'accumulation** : le système peut purger le cache en cas de manque d'espace, et l'utilisateur
+  peut le vider. Les fichiers ne s'entassent pas indéfiniment si l'app oublie de les supprimer.
+- **Confidentialité** : des documents sensibles (pièces d'identité, contrats) ne restent pas stockés
+  durablement sans que l'app l'ait décidé. Sur iOS, `Caches` est aussi exclu des sauvegardes iCloud.
+- **Même comportement sur les deux plateformes**, grâce au sous-dossier dédié, qui pourra aussi être
+  vidé par une future API de nettoyage.
+- Sur iOS, `Caches` a été préféré à `tmp/`, que le système peut vider dès que l'app est suspendue.
+
+**Conséquence pour l'application hôte** : elle doit **copier** les fichiers qu'elle veut conserver,
+par exemple dans `getApplicationDocumentsDirectory()` (package `path_provider`).
+
+Avant la 1.2.0, iOS écrivait dans `tmp/` (et à côté de la source pour les compressions), et Android dans
+`filesDir`, de façon persistante.
+
 ## 📊 Comportements par plateforme
 
 | Fonctionnalité | iOS | Android |
@@ -286,7 +318,7 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
 | `autoCompress: true` | ✅ | ✅ |
 | `compressImage` | ✅ | ✅ |
 | `compressPdf` | ✅ (pages rastérisées) | ❌ Échec explicite |
-| Emplacement des scans | Répertoire temporaire (peut être purgé par le système) | `filesDir` (persistant) |
+| Emplacement des fichiers produits | `Library/Caches/capture_helper/` | `cacheDir/capture_helper/` |
 | Import depuis la galerie | Non | Désactivé |
 
 ## ⚠️ Messages d'erreur
@@ -363,8 +395,8 @@ manuellement avec l'application exemple, sur iOS et Android, avant chaque public
 
 - **Traitement 100 % local** : aucun appel réseau.
 - **Permissions minimales** : caméra uniquement.
-- **Stockage privé** : les fichiers restent dans le conteneur de l'app (répertoire temporaire sur iOS,
-  `filesDir` sur Android). Le nettoyage des fichiers est à la charge de l'application hôte.
+- **Stockage privé et temporaire** : les fichiers restent dans le cache de l'app
+  (`capture_helper/`). Le système peut les purger, et l'application hôte copie ceux qu'elle veut garder.
 - **Privacy manifest iOS** à jour (voir plus haut).
 - **Contact public** : `support@alexislouis.xyz`. Aucune adresse personnelle ne doit apparaître dans les
   fichiers du package (podspec, README…).
@@ -373,12 +405,11 @@ manuellement avec l'application exemple, sur iOS et Android, avant chaque public
 
 ### Limitations
 - iOS : capture automatique non désactivable et `pageLimit` appliqué après coup (limites de VisionKit).
-- iOS : les scans sont écrits dans le répertoire temporaire, que le système peut purger. L'application doit
-  les copier si elle veut les conserver.
+- Les fichiers produits sont temporaires (cache) : l'application doit les copier pour les conserver.
 - Android : `compressPdf` non implémenté.
 - Un seul scan actif à la fois.
 
 ### Pistes
-- Aligner l'emplacement de stockage entre les plateformes (par exemple, un répertoire persistant dédié).
+- API `clearTemporaryFiles()` pour vider le répertoire `capture_helper/` du cache.
 - Compression PDF sur Android (`PdfRenderer` + `PdfDocument`).
 - OCR optionnel, génération de PDF à partir des scans.

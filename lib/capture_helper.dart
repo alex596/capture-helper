@@ -44,6 +44,10 @@ class CaptureHelper {
   /// - Statut de l'opération
   /// - Message d'erreur éventuel
   ///
+  /// Les fichiers produits sont écrits dans le cache de l'application (sous-dossier
+  /// `capture_helper/`) et peuvent être supprimés par le système : copiez-les dans un
+  /// répertoire persistant pour les conserver.
+  ///
   /// Exemple d'utilisation :
   /// ```dart
   /// final result = await CaptureHelper().scanDocument(
@@ -97,6 +101,10 @@ class CaptureHelper {
   /// - Chemin du fichier compressé
   /// - Tailles originale et compressée
   /// - Statistiques de compression
+  ///
+  /// Les fichiers produits sont écrits dans le cache de l'application (sous-dossier
+  /// `capture_helper/`) et peuvent être supprimés par le système : copiez-les dans un
+  /// répertoire persistant pour les conserver.
   ///
   /// Exemple d'utilisation :
   /// ```dart

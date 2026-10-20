@@ -26,6 +26,7 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
     - [🎯 Guide de qualité de compression](#-guide-de-qualité-de-compression)
     - [📋 Exemple complet avec gestion d'erreurs](#-exemple-complet-avec-gestion-derreurs)
     - [📄 Compression de PDF](#-compression-de-pdf)
+    - [💾 Stockage des fichiers](#-stockage-des-fichiers)
   - [API](#api)
     - [CaptureHelper](#capturehelper)
       - [Méthodes](#méthodes)
@@ -436,6 +437,34 @@ if (pdfResult.success) {
 }
 ```
 
+### 💾 Stockage des fichiers
+
+Le plugin renvoie des **chemins de fichiers**. Tous les fichiers produits (pages scannées et fichiers
+compressés) sont écrits dans le **cache** de l'application :
+
+| Plateforme | Répertoire |
+|------------|-----------|
+| iOS | `Library/Caches/capture_helper/` |
+| Android | `cacheDir/capture_helper/` |
+
+Ces fichiers sont **temporaires** : le système peut les supprimer en cas de manque d'espace. Pour conserver
+un document, copiez-le dans un répertoire persistant, par exemple avec
+[`path_provider`](https://pub.dev/packages/path_provider) :
+
+```dart
+import 'dart:io';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
+final result = await CaptureHelper().scanDocument();
+if (result.success) {
+  final documentsDir = await getApplicationDocumentsDirectory();
+  for (final imagePath in result.imagePaths) {
+    await File(imagePath).copy(p.join(documentsDir.path, p.basename(imagePath)));
+  }
+}
+```
+
 ## API
 
 ### CaptureHelper
@@ -529,6 +558,7 @@ ios/
         ├── Services/
         │   ├── DocumentScannerService.swift
         │   ├── ImageCompressionService.swift
+        │   ├── OutputDirectory.swift
         │   ├── PDFCompressionService.swift
         │   └── PermissionManager.swift
         └── Generated/                  # Code généré par Pigeon

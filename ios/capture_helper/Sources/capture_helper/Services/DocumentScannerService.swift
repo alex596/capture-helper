@@ -67,9 +67,9 @@ class DocumentScannerService: NSObject {
         }
     }
 
-    /// Sauvegarde une image VNDocumentCameraScan dans un fichier temporaire
+    /// Sauvegarde une image VNDocumentCameraScan dans le répertoire de sortie du plugin
     private func saveImage(_ image: UIImage, index: Int) -> URL? {
-        let tempDirectory = FileManager.default.temporaryDirectory
+        let outputDirectory = OutputDirectory.url()
         let timestamp = Int(Date().timeIntervalSince1970 * 1000)
 
         // Déterminer l'extension et les données selon le format
@@ -84,7 +84,7 @@ class DocumentScannerService: NSObject {
         }
 
         let filename = "scan_\(timestamp)_\(index).\(fileExtension)"
-        let fileURL = tempDirectory.appendingPathComponent(filename)
+        let fileURL = outputDirectory.appendingPathComponent(filename)
 
         guard let data = imageData else {
             return nil

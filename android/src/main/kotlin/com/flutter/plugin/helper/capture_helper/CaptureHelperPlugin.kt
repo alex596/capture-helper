@@ -31,6 +31,16 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
     companion object {
         private const val REQUEST_CODE_SCAN = 100
+        private const val OUTPUT_DIRECTORY_NAME = "capture_helper"
+    }
+
+    /**
+     * Répertoire de sortie des fichiers produits par le plugin (scans et compressions) : `cacheDir/capture_helper/`.
+     * Les fichiers sont privés à l'app et peuvent être supprimés par le système en cas de manque d'espace ;
+     * l'application hôte doit copier ceux qu'elle souhaite conserver.
+     */
+    private fun outputDirectory(context: Context): File {
+        return File(context.cacheDir, OUTPUT_DIRECTORY_NAME).apply { mkdirs() }
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -140,7 +150,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
             // Create output file (même nommage qu'iOS : <nom>_compressed.<ext>)
             val outputFileName = "${sourceFile.nameWithoutExtension}_compressed.$fileExtension"
-            val outputFile = File(context!!.filesDir, outputFileName)
+            val outputFile = File(outputDirectory(context!!), outputFileName)
 
             // Compress and save
             // PNG: qualité ignorée (compression sans perte)
@@ -245,7 +255,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
         )
 
         val fileName = "scan_${System.currentTimeMillis()}_$index.$fileExtension"
-        val destFile = File(currentContext.filesDir, fileName)
+        val destFile = File(outputDirectory(currentContext), fileName)
 
         // Sauvegarder dans le bon format
         FileOutputStream(destFile).use { output ->
