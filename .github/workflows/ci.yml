@@ -57,14 +57,22 @@ jobs:
   ios:
     name: iOS (SPM + CocoaPods)
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: capture_helper
     steps:
+      # Le dossier doit s'appeler comme le plugin : pour une dépendance `path: ../`, Flutter nomme le
+      # paquet SPM d'après le dossier du dépôt ('capture-helper' par défaut), ce qui entre en conflit
+      # avec l'override local 'capture_helper' ajouté par Flutter dans le projet Xcode de l'exemple.
       - uses: actions/checkout@v5
+        with:
+          path: capture_helper
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - name: Build iOS de l'exemple (Swift Package Manager)
-        working-directory: example
+        working-directory: capture_helper/example
         run: flutter build ios --no-codesign --debug
       - name: Validation du podspec (CocoaPods)
         run: pod lib lint ios/capture_helper.podspec --configuration=Debug --skip-tests --use-modular-headers --use-libraries --allow-warnings

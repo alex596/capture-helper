@@ -383,6 +383,15 @@ flutter:
     enable-swift-package-manager: false
 ```
 
+**Le dépôt doit être cloné dans un dossier nommé `capture_helper`.** L'exemple dépend du plugin en
+`path: ../`, et Flutter nomme alors le paquet SPM d'après le dossier du dépôt (`.packages/capture-helper`
+si le dossier s'appelle `capture-helper`). Or Flutter ajoute aussi automatiquement dans le projet Xcode de
+l'exemple un override local `../../ios/capture_helper`, dont l'identité est `capture_helper`. Si les deux
+noms diffèrent, la résolution SPM échoue :
+`unable to override package 'capture_helper' because its identity 'capture-helper' doesn't match…`.
+Ce problème ne concerne que l'exemple : les applications qui consomment le plugin depuis pub.dev n'ont pas
+cet override. En CI, le checkout du job iOS est fait dans `capture_helper` (`actions/checkout` avec `path:`).
+
 ### Intégration continue
 
 `.github/workflows/ci.yml`, déclenchée sur les pull requests et les pushs sur `main` :
