@@ -12,7 +12,7 @@ Uses the native VisionKit document camera on iOS.
                        DESC
   s.homepage         = 'https://github.com/alex596/capture-helper'
   s.license          = { :type => 'MIT', :file => '../LICENSE' }
-  s.author           = { 'Alexis Louis' => 'alexis.louis795@gmail.com' }
+  s.author           = { 'Alexis Louis' => 'support@alexislouis.xyz' }
   s.source           = { :path => '.' }
   s.source_files = 'capture_helper/Sources/capture_helper/**/*.swift'
   s.resource_bundles = {'capture_helper_privacy' => ['capture_helper/Sources/capture_helper/PrivacyInfo.xcprivacy']}

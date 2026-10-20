@@ -1,5 +1,11 @@
 # Plugin Flutter Document Scanner - Guide de développement complet
 
+> ⚠️ **Document de conception initial (historique).** Ce guide décrit l'approche envisagée avant
+> l'implémentation (pont Objective-C, Pigeon 17, `minSdkVersion 21`, `ios/Classes`…) et n'est plus
+> à jour. Pour l'état actuel du plugin (Pigeon 29, Flutter 3.44+, API 24+, Swift Package Manager),
+> se référer au [README](../README.md) et au [CHANGELOG](../CHANGELOG.md).
+
+
 ## 📋 Vue d'ensemble du projet
 
 Ce plugin Flutter offre des capacités de scan de documents en utilisant les technologies natives :

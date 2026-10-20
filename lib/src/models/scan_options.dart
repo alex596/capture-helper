@@ -69,5 +69,6 @@ class CaptureHelperScanOptions {
   }
 
   @override
-  int get hashCode => autoCompress.hashCode ^ compressionQuality.hashCode ^ outputFormat.hashCode ^ useAutomaticCapture.hashCode ^ pageLimit.hashCode;
+  int get hashCode =>
+      autoCompress.hashCode ^ compressionQuality.hashCode ^ outputFormat.hashCode ^ useAutomaticCapture.hashCode ^ pageLimit.hashCode;
 }

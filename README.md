@@ -36,6 +36,7 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
   - [Développement](#développement)
     - [Régénérer le code Pigeon](#régénérer-le-code-pigeon)
     - [Exécuter les tests](#exécuter-les-tests)
+    - [Swift Package Manager et CocoaPods](#swift-package-manager-et-cocoapods)
     - [Exécuter l'exemple](#exécuter-lexemple)
   - [Limitations](#limitations)
     - [iOS](#ios-1)
@@ -51,8 +52,9 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 
 - **[CHEATSHEET.md](CHEATSHEET.md)** - Aide-mémoire rapide avec toutes les commandes
 - **[EXAMPLES.md](EXAMPLES.md)** - Exemples de code détaillés pour tous les cas d'usage
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guide de résolution des problèmes
-- **[docs/TECHS.md](docs/TECHS.md)** - Documentation technique complète
+- **[CHANGELOG.md](CHANGELOG.md)** - Historique des versions
+- **[doc/SPECS.md](doc/SPECS.md)** - Spécifications fonctionnelles
+- **[doc/TECHS.md](doc/TECHS.md)** - Document de conception technique initial
 
 ## Fonctionnalités
 
@@ -68,8 +70,9 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 
 | Plateforme | Version minimale | API native |
 |------------|------------------|------------|
+| Flutter    | 3.44+ (Dart 3.12+) | -        |
 | iOS        | 13.0+           | VisionKit  |
-| Android    | API 21+ (5.0)   | ML Kit     |
+| Android    | API 24+ (7.0)   | ML Kit     |
 
 Sur iOS, le plugin supporte **Swift Package Manager** (par défaut depuis Flutter 3.44) et **CocoaPods**.
 
@@ -79,14 +82,13 @@ Ajoutez cette ligne à votre fichier `pubspec.yaml` :
 
 ```yaml
 dependencies:
-  capture_helper:
-    path: ../capture_helper
+  capture_helper: ^1.2.0
 ```
 
-Puis exécutez :
+Ou via la ligne de commande :
 
 ```bash
-flutter pub get
+flutter pub add capture_helper
 ```
 
 ## Configuration
@@ -102,30 +104,24 @@ Ajoutez la permission caméra dans votre `ios/Runner/Info.plist` :
 
 ### Android
 
-Les permissions sont automatiquement ajoutées via le manifest du plugin. Assurez-vous que votre `android/build.gradle` a les bonnes configurations :
+La permission caméra est automatiquement ajoutée via le manifest du plugin. Assurez-vous que votre `android/app/build.gradle.kts` respecte le `minSdk` requis :
 
-```gradle
+```kotlin
 android {
-    compileSdkVersion 36
-    minSdkVersion 24
+    defaultConfig {
+        minSdk = 24 // ou flutter.minSdkVersion (24 par défaut depuis Flutter 3.44)
+    }
 }
 ```
 
-**⚠️ Important : Version Java**
+**Compatibilité Gradle / Kotlin**
 
-Ce plugin nécessite Java 17, 21 ou 23. Java 24 n'est pas encore compatible avec Gradle 8.12.
+- Le plugin utilise le Kotlin intégré d'AGP 9 et fonctionne avec `android.builtInKotlin=true` comme `false`.
+- Java 17 minimum est requis (Java 21 recommandé). Vérifiez avec `flutter doctor -v` et, si besoin :
 
 ```bash
-# Vérifier votre version Java
-flutter doctor -v
-
-# Si vous avez Java 24, installer Java 21 (recommandé)
-# macOS avec Homebrew :
-brew install openjdk@21
-flutter config --jdk-dir=/opt/homebrew/opt/openjdk@21
+flutter config --jdk-dir=/chemin/vers/jdk-21
 ```
-
-Pour plus de détails, consultez [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## 🚀 Démarrage rapide
 
@@ -539,14 +535,12 @@ ios/
             └── DocumentScannerApi.g.swift
 
 android/src/main/kotlin/.../
-├── CaptureHelperPlugin.kt          # Plugin principal Android
-├── services/
-│   ├── DocumentScannerService.kt
-│   ├── ImageCompressionService.kt
-│   ├── PDFCompressionService.kt
-│   └── PermissionManager.kt
+├── CaptureHelperPlugin.kt           # Plugin principal Android (implémente DocumentScannerApi)
 └── generated/                       # Code généré par Pigeon
     └── DocumentScannerApi.g.kt
+
+pigeons/
+└── document_scanner_api.dart        # Définition de l'API Pigeon (source de vérité)
 ```
 
 ## Développement
@@ -566,8 +560,23 @@ dart run pigeon --input pigeons/document_scanner_api.dart
 ### Exécuter les tests
 
 ```bash
+# Tests Dart
 flutter test
+
+# Tests unitaires Kotlin (après un premier build de l'exemple)
+cd example/android && ./gradlew :capture_helper:testDebugUnitTest
+
+# Validation du podspec CocoaPods
+pod lib lint ios/capture_helper.podspec --configuration=Debug --skip-tests --use-modular-headers --use-libraries --allow-warnings
 ```
+
+### Swift Package Manager et CocoaPods
+
+Le plugin doit rester compatible avec les deux gestionnaires :
+
+- **SPM** (par défaut depuis Flutter 3.44) : `cd example && flutter build ios --no-codesign`
+- **CocoaPods** : tester dans une app avec `enable-swift-package-manager: false` dans la section `flutter: config:` du `pubspec.yaml`
+  (l'exemple étant migré en SPM, il ne peut plus servir à tester CocoaPods)
 
 ### Exécuter l'exemple
 
@@ -584,7 +593,7 @@ flutter run
 - VisionKit requiert l'accès à la caméra
 
 ### Android
-- Nécessite Android API 21 (5.0) ou supérieur
+- Nécessite Android API 24 (7.0) ou supérieur
 - Nécessite Google Play Services pour ML Kit
 - La numérisation nécessite la permission CAMERA
 
@@ -624,3 +633,5 @@ Ce projet est sous licence MIT.
 ## Auteur
 
 **Author:** [Alexis Louis](https://alexislouis.xyz)
+
+**Contact :** [support@alexislouis.xyz](mailto:support@alexislouis.xyz)
