@@ -383,12 +383,6 @@ flutter:
     enable-swift-package-manager: false
 ```
 
-**Ne pas ajouter le plugin comme paquet local dans le projet Xcode de l'exemple** (« Add Files to
-Runner » → `ios/capture_helper`). Cette référence sert d'override à SPM, dont l'identité de paquet est
-déduite du nom de dossier. Elle fait échouer la résolution des dépendances dès que le dépôt est cloné
-dans un dossier nommé autrement, par exemple `capture-helper` sur GitHub Actions :
-`unable to override package 'capture_helper' because its identity 'capture-helper' doesn't match…`.
-
 ### Intégration continue
 
 `.github/workflows/ci.yml`, déclenchée sur les pull requests et les pushs sur `main` :
