@@ -4,7 +4,7 @@ import 'package:pigeon/pigeon.dart';
   PigeonOptions(
     dartOut: 'lib/src/generated/document_scanner_api.g.dart',
     dartOptions: DartOptions(),
-    swiftOut: 'ios/Classes/Generated/DocumentScannerApi.g.swift',
+    swiftOut: 'ios/capture_helper/Sources/capture_helper/Generated/DocumentScannerApi.g.swift',
     swiftOptions: SwiftOptions(),
     kotlinOut: 'android/src/main/kotlin/com/flutter/plugin/helper/capture_helper/generated/DocumentScannerApi.g.kt',
     kotlinOptions: KotlinOptions(package: 'com.flutter.plugin.helper.capture_helper.generated'),

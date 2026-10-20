@@ -42,10 +42,7 @@ class DocumentScannerService: NSObject {
 
     /// Vérifie si VisionKit est disponible
     static func isScanningAvailable() -> Bool {
-        if #available(iOS 13.0, *) {
-            return VNDocumentCameraViewController.isSupported
-        }
-        return false
+        return VNDocumentCameraViewController.isSupported
     }
 
     /// Lance la numérisation de documents

@@ -71,6 +71,8 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 | iOS        | 13.0+           | VisionKit  |
 | Android    | API 21+ (5.0)   | ML Kit     |
 
+Sur iOS, le plugin supporte **Swift Package Manager** (par défaut depuis Flutter 3.44) et **CocoaPods**.
+
 ## Installation
 
 Ajoutez cette ligne à votre fichier `pubspec.yaml` :
@@ -521,15 +523,20 @@ lib/
 │   └── generated/                   # Code généré par Pigeon
 │       └── document_scanner_api.g.dart
 
-ios/Classes/
-├── CaptureHelperPlugin.swift       # Plugin principal iOS
-├── Services/
-│   ├── DocumentScannerService.swift
-│   ├── ImageCompressionService.swift
-│   ├── PDFCompressionService.swift
-│   └── PermissionManager.swift
-└── Generated/                       # Code généré par Pigeon
-    └── DocumentScannerApi.g.swift
+ios/
+├── capture_helper.podspec           # Intégration CocoaPods
+└── capture_helper/                  # Swift Package (SPM)
+    ├── Package.swift
+    └── Sources/capture_helper/
+        ├── CaptureHelperPlugin.swift   # Plugin principal iOS
+        ├── PrivacyInfo.xcprivacy       # Privacy manifest
+        ├── Services/
+        │   ├── DocumentScannerService.swift
+        │   ├── ImageCompressionService.swift
+        │   ├── PDFCompressionService.swift
+        │   └── PermissionManager.swift
+        └── Generated/                  # Code généré par Pigeon
+            └── DocumentScannerApi.g.swift
 
 android/src/main/kotlin/.../
 ├── CaptureHelperPlugin.kt          # Plugin principal Android

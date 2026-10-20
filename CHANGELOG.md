@@ -34,6 +34,11 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   au-dessus d'un éventuel écran modal ; remplace `UIApplication.shared.windows`, déprécié
 
 ### Maintenance
+- **iOS** : Support de **Swift Package Manager** (en plus de CocoaPods)
+  - Sources déplacées de `ios/Classes` vers `ios/capture_helper/Sources/capture_helper`
+  - Privacy manifest (`PrivacyInfo.xcprivacy`) désormais embarqué, avec déclaration de l'accès
+    aux métadonnées de fichiers (`NSPrivacyAccessedAPICategoryFileTimestamp`, raison `C617.1`)
+  - Podspec : métadonnées complétées (version, description, auteur, licence)
 - **Android** : Migration vers le Kotlin intégré d'AGP 9 (suppression de `kotlin-android`)
   - Compatible avec les apps en `android.builtInKotlin=true` comme `false`
 - **Android** : ML Kit Document Scanner `16.0.0-beta1` → `16.0.0` (stable)
