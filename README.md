@@ -54,7 +54,7 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 - **[EXAMPLES.md](EXAMPLES.md)** - Exemples de code détaillés pour tous les cas d'usage
 - **[CHANGELOG.md](CHANGELOG.md)** - Historique des versions
 - **[doc/SPECS.md](doc/SPECS.md)** - Spécifications fonctionnelles
-- **[doc/TECHS.md](doc/TECHS.md)** - Document de conception technique initial
+- **[doc/TECHS.md](doc/TECHS.md)** - Documentation technique (architecture, comportements par plateforme, outillage)
 
 ## Fonctionnalités
 
