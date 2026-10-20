@@ -142,6 +142,27 @@ class CaptureHelper {
     }
   }
 
+  /// Supprime tous les fichiers produits par le plugin
+  ///
+  /// Vide le sous-dossier `capture_helper/` du cache de l'application, qui contient
+  /// les pages scannées et les fichiers compressés. Les chemins renvoyés précédemment
+  /// par [scanDocument], [compressImage] et [compressPdf] ne sont plus valides ensuite.
+  ///
+  /// Retourne `true` si le nettoyage a réussi (ou s'il n'y avait rien à supprimer).
+  ///
+  /// Exemple d'utilisation :
+  /// ```dart
+  /// // Après avoir envoyé ou copié les documents
+  /// await CaptureHelper().clearTemporaryFiles();
+  /// ```
+  Future<bool> clearTemporaryFiles() async {
+    try {
+      return await _api.clearTemporaryFiles();
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Compresse un document PDF
   ///
   /// [pdfPath] : Chemin vers le PDF à compresser

@@ -418,6 +418,8 @@ protocol DocumentScannerApi {
   func compressPdf(pdfPath: String, quality: Int64, completion: @escaping (Result<CompressionResult, Error>) -> Void)
   /// Vérifie si la numérisation est disponible sur l'appareil
   func isScanningAvailable() throws -> Bool
+  /// Supprime tous les fichiers produits par le plugin (sous-dossier `capture_helper/` du cache)
+  func clearTemporaryFiles(completion: @escaping (Result<Bool, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -495,6 +497,22 @@ class DocumentScannerApiSetup {
       }
     } else {
       isScanningAvailableChannel.setMessageHandler(nil)
+    }
+    /// Supprime tous les fichiers produits par le plugin (sous-dossier `capture_helper/` du cache)
+    let clearTemporaryFilesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.capture_helper.DocumentScannerApi.clearTemporaryFiles\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      clearTemporaryFilesChannel.setMessageHandler { _, reply in
+        api.clearTemporaryFiles { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      clearTemporaryFilesChannel.setMessageHandler(nil)
     }
   }
 }

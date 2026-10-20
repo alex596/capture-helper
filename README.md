@@ -465,6 +465,12 @@ if (result.success) {
 }
 ```
 
+Une fois les fichiers envoyés ou copiés, libérez l'espace avec `clearTemporaryFiles()` :
+
+```dart
+await CaptureHelper().clearTemporaryFiles(); // vide le dossier capture_helper/ du cache
+```
+
 ## API
 
 ### CaptureHelper
@@ -477,6 +483,7 @@ La classe principale du plugin (singleton).
 - `Future<CaptureHelperScanResult> scanDocument({CaptureHelperScanOptions options})` - Lance la numérisation
 - `Future<CaptureHelperCompressionResult> compressImage({required String imagePath, int quality = 80})` - Compresse une image
 - `Future<CaptureHelperCompressionResult> compressPdf({required String pdfPath, int quality = 80})` - Compresse un PDF
+- `Future<bool> clearTemporaryFiles()` - Supprime tous les fichiers produits par le plugin (dossier `capture_helper/` du cache)
 
 ### CaptureHelperScanOptions
 

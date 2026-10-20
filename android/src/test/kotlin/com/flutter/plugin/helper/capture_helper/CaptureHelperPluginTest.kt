@@ -50,6 +50,14 @@ internal class CaptureHelperPluginTest {
     }
 
     @Test
+    fun clearTemporaryFiles_withoutContext_returnsFalse() {
+        var result: Result<Boolean>? = null
+        CaptureHelperPlugin().clearTemporaryFiles { result = it }
+
+        assertFalse(result!!.getOrThrow())
+    }
+
+    @Test
     fun compressPdf_isNotSupported() {
         var result: Result<CompressionResult>? = null
         CaptureHelperPlugin().compressPdf("/tmp/doc.pdf", 80) { result = it }

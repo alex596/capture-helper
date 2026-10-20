@@ -170,6 +170,10 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
         }
     }
 
+    func clearTemporaryFiles(completion: @escaping (Result<Bool, Error>) -> Void) {
+        completion(.success(OutputDirectory.clear()))
+    }
+
     func isScanningAvailable() throws -> Bool {
         if #available(iOS 13.0, *) {
             return DocumentScannerService.isScanningAvailable()

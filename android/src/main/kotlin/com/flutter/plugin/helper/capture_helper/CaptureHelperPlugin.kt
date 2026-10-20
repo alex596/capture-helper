@@ -126,6 +126,18 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
         callback(Result.success(compressionFailure(0L, "PDF compression is not supported on Android")))
     }
 
+    override fun clearTemporaryFiles(callback: (Result<Boolean>) -> Unit) {
+        val currentContext = context
+        if (currentContext == null) {
+            callback(Result.success(false))
+            return
+        }
+
+        // Supprime le sous-dossier capture_helper/ du cache (true s'il n'existait pas)
+        val directory = File(currentContext.cacheDir, OUTPUT_DIRECTORY_NAME)
+        callback(Result.success(!directory.exists() || directory.deleteRecursively()))
+    }
+
     private fun compressImageFile(imagePath: String, quality: Int): CompressionResult {
         try {
             val sourceFile = File(imagePath)

@@ -16,8 +16,12 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - **iOS** : `Library/Caches/capture_helper/` (auparavant `tmp/`, et à côté de la source pour les compressions)
   - **Android** : `cacheDir/capture_helper/` (auparavant `filesDir`, persistant)
 - Ces fichiers sont temporaires : l'application doit **copier** ceux qu'elle souhaite conserver
+- Nouvelle méthode `clearTemporaryFiles()` pour vider ce dossier
 
 ### Ajouts
+- **Nettoyage** : Nouvelle méthode `CaptureHelper().clearTemporaryFiles()` qui supprime tous les fichiers
+  produits par le plugin (sous-dossier `capture_helper/` du cache). Retourne `true` en cas de succès.
+
 - **Capture automatique/manuelle** : Nouveau paramètre `useAutomaticCapture` dans `CaptureHelperScanOptions`
   - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté
   - `false` : L'utilisateur doit appuyer manuellement sur le bouton pour capturer

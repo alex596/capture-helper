@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:capture_helper/capture_helper.dart';
 
@@ -161,6 +162,33 @@ void main() {
       final instance2 = CaptureHelper();
 
       expect(identical(instance1, instance2), true);
+    });
+  });
+
+  group('CaptureHelper.clearTemporaryFiles', () {
+    const channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.clearTemporaryFiles';
+    const codec = StandardMessageCodec();
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    tearDown(() => messenger.setMockMessageHandler(channelName, null));
+
+    test('returns the native result', () async {
+      messenger.setMockMessageHandler(channelName, (_) async => codec.encodeMessage(<Object?>[true]));
+
+      expect(await CaptureHelper().clearTemporaryFiles(), true);
+    });
+
+    test('returns false on platform error', () async {
+      messenger.setMockMessageHandler(
+        channelName,
+        (_) async => codec.encodeMessage(<Object?>['ERROR', 'Failed', null]),
+      );
+
+      expect(await CaptureHelper().clearTemporaryFiles(), false);
+    });
+
+    test('returns false when no native implementation is registered', () async {
+      expect(await CaptureHelper().clearTemporaryFiles(), false);
     });
   });
 }

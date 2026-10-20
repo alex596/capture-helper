@@ -64,6 +64,13 @@ final result = await CaptureHelper().compressPdf(
 );
 ```
 
+### 🧹 Nettoyer les fichiers temporaires
+
+```dart
+// Les fichiers produits sont dans le cache (capture_helper/) : copiez ceux à conserver, puis
+await CaptureHelper().clearTemporaryFiles();
+```
+
 ## Résultats
 
 ### ScanResult

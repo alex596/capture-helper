@@ -98,4 +98,8 @@ abstract class DocumentScannerApi {
 
   /// Vérifie si la numérisation est disponible sur l'appareil
   bool isScanningAvailable();
+
+  /// Supprime tous les fichiers produits par le plugin (sous-dossier `capture_helper/` du cache)
+  @asyncCallback
+  bool clearTemporaryFiles();
 }

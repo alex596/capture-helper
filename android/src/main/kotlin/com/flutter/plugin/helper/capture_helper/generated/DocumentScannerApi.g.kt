@@ -425,6 +425,8 @@ interface DocumentScannerApi {
   fun compressPdf(pdfPath: String, quality: Long, callback: (Result<CompressionResult>) -> Unit)
   /** Vérifie si la numérisation est disponible sur l'appareil */
   fun isScanningAvailable(): Boolean
+  /** Supprime tous les fichiers produits par le plugin (sous-dossier `capture_helper/` du cache) */
+  fun clearTemporaryFiles(callback: (Result<Boolean>) -> Unit)
 
   companion object {
     /** The codec used by DocumentScannerApi. */
@@ -507,6 +509,24 @@ interface DocumentScannerApi {
               DocumentScannerApiPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.capture_helper.DocumentScannerApi.clearTemporaryFiles$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.clearTemporaryFiles{ result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(DocumentScannerApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(DocumentScannerApiPigeonUtils.wrapResult(data))
+              }
+            }
           }
         } else {
           channel.setMessageHandler(null)

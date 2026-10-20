@@ -128,6 +128,9 @@ abstract class DocumentScannerApi {
   CompressionResult compressPdf(String pdfPath, int quality);
 
   bool isScanningAvailable();
+
+  @asyncCallback
+  bool clearTemporaryFiles();
 }
 ```
 
@@ -164,6 +167,7 @@ Singleton (`CaptureHelper()` retourne toujours la même instance) qui encapsule 
 | `scanDocument({options})` | Convertit `CaptureHelperScanOptions` → `ScanOptions` ; toute exception (dont `PlatformException`) est convertie en `CaptureHelperScanResult.failure('Failed to scan document: …')` |
 | `compressImage({imagePath, quality})` | `assert` sur `quality` (0-100) ; exception → `CaptureHelperCompressionResult.failure` |
 | `compressPdf({pdfPath, quality})` | Idem |
+| `clearTemporaryFiles()` | Vide le répertoire de sortie ; retourne `false` en cas d'exception |
 
 Les méthodes publiques **ne lèvent jamais d'exception** : l'appelant teste toujours `success` et
 `errorMessage`.
@@ -305,6 +309,11 @@ sous-dossier dédié du **cache** de l'application :
 **Conséquence pour l'application hôte** : elle doit **copier** les fichiers qu'elle veut conserver,
 par exemple dans `getApplicationDocumentsDirectory()` (package `path_provider`).
 
+**Nettoyage** : `clearTemporaryFiles()` supprime le sous-dossier `capture_helper/` et tout son contenu
+(`OutputDirectory.clear()` sur iOS, `File.deleteRecursively()` sur Android). Elle retourne `true` si le
+dossier a été supprimé ou n'existait pas. La suppression est synchrone sur le thread principal, ce qui
+reste rapide pour quelques dizaines d'images. Les chemins renvoyés auparavant ne sont plus valides.
+
 Avant la 1.2.0, iOS écrivait dans `tmp/` (et à côté de la source pour les compressions), et Android dans
 `filesDir`, de façon persistante.
 
@@ -385,7 +394,8 @@ flutter:
 | Fichier | Portée |
 |---------|--------|
 | `test/capture_helper_test.dart` | Modèles Dart (options, résultats, formatage, ratios) et singleton |
-| `android/src/test/.../CaptureHelperPluginTest.kt` | `isScanningAvailable`, `scanDocument` sans activité, `compressImage` sur un fichier absent, `compressPdf` |
+| `android/src/test/.../CaptureHelperPluginTest.kt` | `isScanningAvailable`, `scanDocument` sans activité, `compressImage` sur un fichier absent, `compressPdf`, `clearTemporaryFiles` sans contexte |
+| `test/capture_helper_test.dart` (groupe `clearTemporaryFiles`) | Résultat natif, erreur plateforme et absence d'implémentation, via un mock du canal Pigeon |
 | `example/integration_test/plugin_integration_test.dart` | Disponibilité de l'API sur appareil |
 
 La numérisation réelle demande une interaction utilisateur et un **appareil physique** : elle se valide
@@ -398,6 +408,7 @@ manuellement avec l'application exemple, sur iOS et Android, avant chaque public
 - **Stockage privé et temporaire** : les fichiers restent dans le cache de l'app
   (`capture_helper/`). Le système peut les purger, et l'application hôte copie ceux qu'elle veut garder.
 - **Privacy manifest iOS** à jour (voir plus haut).
+- **Nettoyage** : `clearTemporaryFiles()` permet de supprimer les documents dès qu'ils ne sont plus utiles.
 - **Contact public** : `support@alexislouis.xyz`. Aucune adresse personnelle ne doit apparaître dans les
   fichiers du package (podspec, README…).
 
@@ -410,6 +421,5 @@ manuellement avec l'application exemple, sur iOS et Android, avant chaque public
 - Un seul scan actif à la fois.
 
 ### Pistes
-- API `clearTemporaryFiles()` pour vider le répertoire `capture_helper/` du cache.
 - Compression PDF sur Android (`PdfRenderer` + `PdfDocument`).
 - OCR optionnel, génération de PDF à partir des scans.
