@@ -5,27 +5,10 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.3.0]
-
-### Maintenance
-- **Flutter** : Version minimale passée à Flutter 3.44 / Dart 3.12
-- **Android** : Migration vers le Kotlin intégré d'AGP 9 (suppression de `kotlin-android`)
-  - Compatible avec les apps en `android.builtInKotlin=true` comme `false`
-- **Android** : ML Kit Document Scanner `16.0.0-beta1` → `16.0.0` (stable)
-- **Android** : AGP 9.1.0, Kotlin 2.4.0 et Gradle 9.3.1 pour l'exemple
-- **Pigeon** : 22.7 → 29.0 (méthodes `@asyncCallback` pour conserver les signatures à callback)
-- **Lints** : `flutter_lints` 5 → 6, suppression du plugin d'analyse `custom_lint` inutilisé
-
-### Corrections
-- **Android** : Le plugin utilise désormais l'API Pigeon générée (`DocumentScannerApi`) au lieu
-  d'un codec écrit à la main, ce qui évite toute désynchronisation entre Dart et Kotlin
-- **Android** : `compressPdf` renvoie une erreur explicite (non supporté) au lieu d'un `channel-error`
-- **Android** : Un second scan lancé pendant un scan en cours est refusé (`ALREADY_ACTIVE`)
-- **iOS** : Recherche du view controller via la scène active (compatible UIScene) et présentation
-  au-dessus d'un éventuel écran modal ; remplace `UIApplication.shared.windows`, déprécié
-- **Exemple** : Migrations Flutter 3.47 (cycle de vie UIScene, iOS 15 minimum, `NSCameraUsageDescription`)
-
 ## [1.2.0] - 2026-10-20
+
+### ⚠️ Prérequis
+- **Flutter** : Version minimale passée à Flutter 3.44 / Dart 3.12
 
 ### Ajouts
 - **Capture automatique/manuelle** : Nouveau paramètre `useAutomaticCapture` dans `CaptureHelperScanOptions`
@@ -42,20 +25,25 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Corrections
 - **Android** : Les options de scan (`outputFormat`, `useAutomaticCapture`, `pageLimit`) étaient ignorées
-  car le message Pigeon (`[ScanOptions]`) n'était pas décodé correctement. Le format PNG est désormais
-  bien pris en compte sur Android.
+  car le message Pigeon n'était pas décodé correctement par un codec écrit à la main. Le plugin utilise
+  désormais l'API Pigeon générée (`DocumentScannerApi`) ; le format PNG est bien pris en compte sur Android.
 - **Android** : Suppression de la limite implicite de pages, `pageLimit = 0` signifie réellement « illimité »
+- **Android** : `compressPdf` renvoie une erreur explicite (non supporté) au lieu d'un `channel-error`
+- **Android** : Un second scan lancé pendant un scan en cours est refusé (`ALREADY_ACTIVE`)
+- **iOS** : Recherche du view controller via la scène active (compatible UIScene) et présentation
+  au-dessus d'un éventuel écran modal ; remplace `UIApplication.shared.windows`, déprécié
 
-### Améliorations
-- **Interface exemple** : Ajout de contrôles UI pour tester les nouvelles options
-  - Commutateur pour activer/désactiver la capture automatique
-  - Slider pour définir la limite de pages (0-10)
-  - Interface avec carte d'options de scan
+### Maintenance
+- **Android** : Migration vers le Kotlin intégré d'AGP 9 (suppression de `kotlin-android`)
+  - Compatible avec les apps en `android.builtInKotlin=true` comme `false`
+- **Android** : ML Kit Document Scanner `16.0.0-beta1` → `16.0.0` (stable)
+- **Pigeon** : 22.7 → 29.0 (méthodes `@asyncCallback` pour conserver les signatures à callback)
+- **Lints** : `flutter_lints` 5 → 6, suppression du plugin d'analyse `custom_lint` inutilisé
 
-### Détails techniques
-- **Android** : Configuration dynamique du scanner mode selon `useAutomaticCapture`
-- **iOS** : Amélioration de la gestion de la limite de pages dans `DocumentScannerService`
-- **Pigeon** : Mise à jour des définitions d'API pour inclure les nouvelles options
+### Exemple
+- Ajout de contrôles UI pour tester les nouvelles options (capture automatique, limite de pages 0-10)
+- AGP 9.1.0, Kotlin 2.4.0 et Gradle 9.3.1
+- Migrations Flutter 3.47 (cycle de vie UIScene, iOS 15 minimum, `NSCameraUsageDescription`)
 
 ## [1.1.1]
 - **Flutter** : Mise à jour du sample
