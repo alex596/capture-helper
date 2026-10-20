@@ -21,6 +21,8 @@ class ScanOptions {
     required this.autoCompress,
     required this.compressionQuality,
     required this.outputFormat,
+    required this.useAutomaticCapture,
+    required this.pageLimit,
   });
 
   /// Si true, compresse automatiquement l'image après la capture
@@ -32,11 +34,20 @@ class ScanOptions {
   /// Format de sortie : 'jpeg' ou 'png'
   String outputFormat;
 
+  /// Si true, capture automatiquement dès que le document est détecté
+  /// Si false, l'utilisateur doit appuyer sur le bouton pour capturer
+  bool useAutomaticCapture;
+
+  /// Nombre maximum de pages à scanner (0 = illimité)
+  int pageLimit;
+
   Object encode() {
     return <Object?>[
       autoCompress,
       compressionQuality,
       outputFormat,
+      useAutomaticCapture,
+      pageLimit,
     ];
   }
 
@@ -46,6 +57,8 @@ class ScanOptions {
       autoCompress: result[0]! as bool,
       compressionQuality: result[1]! as int,
       outputFormat: result[2]! as String,
+      useAutomaticCapture: result[3]! as bool,
+      pageLimit: result[4]! as int,
     );
   }
 }
@@ -132,6 +145,7 @@ class CompressionResult {
   }
 }
 
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -139,13 +153,13 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    } else if (value is ScanOptions) {
+    }    else if (value is ScanOptions) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is ScanResult) {
+    }    else if (value is ScanResult) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is CompressionResult) {
+    }    else if (value is CompressionResult) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
     } else {
@@ -156,11 +170,11 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129:
+      case 129: 
         return ScanOptions.decode(readValue(buffer)!);
-      case 130:
+      case 130: 
         return ScanResult.decode(readValue(buffer)!);
-      case 131:
+      case 131: 
         return CompressionResult.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -174,8 +188,8 @@ class DocumentScannerApi {
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
   DocumentScannerApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-    : pigeonVar_binaryMessenger = binaryMessenger,
-      pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+      : pigeonVar_binaryMessenger = binaryMessenger,
+        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -184,14 +198,14 @@ class DocumentScannerApi {
 
   /// Lance l'interface de numérisation de documents
   Future<ScanResult> scanDocument(ScanOptions options) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.capture_helper.DocumentScannerApi.scanDocument$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.scanDocument$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[options]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
@@ -212,14 +226,14 @@ class DocumentScannerApi {
 
   /// Compresse une image
   Future<CompressionResult> compressImage(String imagePath, int quality) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressImage$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressImage$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[imagePath, quality]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[imagePath, quality]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
@@ -240,14 +254,14 @@ class DocumentScannerApi {
 
   /// Compresse un PDF
   Future<CompressionResult> compressPdf(String pdfPath, int quality) async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressPdf$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressPdf$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(<Object?>[pdfPath, quality]) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[pdfPath, quality]) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {
@@ -268,14 +282,14 @@ class DocumentScannerApi {
 
   /// Vérifie si la numérisation est disponible sur l'appareil
   Future<bool> isScanningAvailable() async {
-    final String pigeonVar_channelName =
-        'dev.flutter.pigeon.capture_helper.DocumentScannerApi.isScanningAvailable$pigeonVar_messageChannelSuffix';
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.isScanningAvailable$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final List<Object?>? pigeonVar_replyList = await pigeonVar_channel.send(null) as List<Object?>?;
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);
     } else if (pigeonVar_replyList.length > 1) {

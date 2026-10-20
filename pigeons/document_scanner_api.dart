@@ -21,10 +21,19 @@ class ScanOptions {
   /// Format de sortie : 'jpeg' ou 'png'
   final String outputFormat;
 
+  /// Si true, capture automatiquement dès que le document est détecté
+  /// Si false, l'utilisateur doit appuyer sur le bouton pour capturer
+  final bool useAutomaticCapture;
+
+  /// Nombre maximum de pages à scanner (0 = illimité)
+  final int pageLimit;
+
   ScanOptions({
     required this.autoCompress,
     required this.compressionQuality,
     required this.outputFormat,
+    required this.useAutomaticCapture,
+    required this.pageLimit,
   });
 }
 

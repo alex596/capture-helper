@@ -5,9 +5,40 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2026-10-20
+
+### Ajouts
+- **Capture automatique/manuelle** : Nouveau paramètre `useAutomaticCapture` dans `CaptureHelperScanOptions`
+  - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté
+  - `false` : L'utilisateur doit appuyer manuellement sur le bouton pour capturer
+  - ✅ **Android** : Pleinement fonctionnel (utilise `SCANNER_MODE_BASE` pour le mode manuel)
+  - ⚠️ **iOS** : Option ignorée car VisionKit ne supporte pas la désactivation de la capture automatique
+
+- **Limite de pages** : Nouveau paramètre `pageLimit` dans `CaptureHelperScanOptions`
+  - `0` (défaut) : Aucune limite, l'utilisateur peut scanner autant de pages qu'il souhaite
+  - `N > 0` : Limite le scanner à N pages maximum
+  - ✅ **Android** : Le scanner se ferme automatiquement après N pages
+  - ⚠️ **iOS** : Le scanner ne se ferme pas automatiquement, mais seules les N premières pages sont retournées
+
+### Corrections
+- **Android** : Les options de scan (`outputFormat`, `useAutomaticCapture`, `pageLimit`) étaient ignorées
+  car le message Pigeon (`[ScanOptions]`) n'était pas décodé correctement. Le format PNG est désormais
+  bien pris en compte sur Android.
+- **Android** : Suppression de la limite implicite de pages, `pageLimit = 0` signifie réellement « illimité »
+
+### Améliorations
+- **Interface exemple** : Ajout de contrôles UI pour tester les nouvelles options
+  - Commutateur pour activer/désactiver la capture automatique
+  - Slider pour définir la limite de pages (0-10)
+  - Interface avec carte d'options de scan
+
+### Détails techniques
+- **Android** : Configuration dynamique du scanner mode selon `useAutomaticCapture`
+- **iOS** : Amélioration de la gestion de la limite de pages dans `DocumentScannerService`
+- **Pigeon** : Mise à jour des définitions d'API pour inclure les nouvelles options
+
 ## [1.1.1]
-### Flutter
-- Mise à jour du sample
+- **Flutter** : Mise à jour du sample
 
 ## [1.1.0]
 
@@ -28,13 +59,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Android** : Ajout explicite de la permission CAMERA dans AndroidManifest.xml
   - Améliore la clarté et la compatibilité
 
-###  Flutter
-- Downgrade sdk: ^3.9.0 -> ^3.8.0
-
 ## [1.0.1]
 
-###  Flutter
-- Downgrade sdk: ^3.9.0 -> ^3.8.0
+- **Flutter** : Downgrade sdk: ^3.9.0 -> ^3.8.0
 
 ## [1.0.0]
 ### iOS | Android | Flutter

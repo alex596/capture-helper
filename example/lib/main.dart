@@ -35,6 +35,8 @@ class _HomePageState extends State<HomePage> {
   bool _isScanningAvailable = false;
   String? _statusMessage;
   OutputFormat _selectedFormat = OutputFormat.jpeg;
+  bool _useAutomaticCapture = true;
+  int _pageLimit = 0;
 
   @override
   void initState() {
@@ -69,6 +71,8 @@ class _HomePageState extends State<HomePage> {
           autoCompress: false,
           compressionQuality: 80,
           outputFormat: _selectedFormat,
+          useAutomaticCapture: _useAutomaticCapture,
+          pageLimit: _pageLimit,
         ),
       );
 
@@ -123,12 +127,14 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Capture Helper Example'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+      body: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 24),
               Icon(
                 Icons.document_scanner,
                 size: 100,
@@ -148,24 +154,88 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 32),
-              // Sélecteur de format
-              SegmentedButton<OutputFormat>(
-                segments: const [
-                  ButtonSegment<OutputFormat>(
-                    value: OutputFormat.jpeg,
-                    label: Text('JPEG'),
+
+              // Options de scan
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Options de scan',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Sélecteur de format
+                      const Text('Format de sortie:'),
+                      const SizedBox(height: 8),
+                      SegmentedButton<OutputFormat>(
+                        segments: const [
+                          ButtonSegment<OutputFormat>(
+                            value: OutputFormat.jpeg,
+                            label: Text('JPEG'),
+                          ),
+                          ButtonSegment<OutputFormat>(
+                            value: OutputFormat.png,
+                            label: Text('PNG'),
+                          ),
+                        ],
+                        selected: {_selectedFormat},
+                        onSelectionChanged: (newSelection) {
+                          setState(() {
+                            _selectedFormat = newSelection.first;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Capture automatique
+                      SwitchListTile(
+                        title: const Text('Capture automatique'),
+                        subtitle: Text(
+                          _useAutomaticCapture
+                            ? 'La photo est prise automatiquement quand le document est détecté'
+                            : 'Vous devez appuyer sur le bouton pour capturer',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        value: _useAutomaticCapture,
+                        onChanged: (value) {
+                          setState(() {
+                            _useAutomaticCapture = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+
+                      // Limite de pages
+                      const SizedBox(height: 8),
+                      Text('Limite de pages: ${_pageLimit == 0 ? 'Illimité' : _pageLimit}'),
+                      Slider(
+                        value: _pageLimit.toDouble(),
+                        min: 0,
+                        max: 10,
+                        divisions: 10,
+                        label: _pageLimit == 0 ? 'Illimité' : '$_pageLimit',
+                        onChanged: (value) {
+                          setState(() {
+                            _pageLimit = value.toInt();
+                          });
+                        },
+                      ),
+                      Text(
+                        _pageLimit == 0
+                          ? 'Aucune limite de pages'
+                          : 'Le scanner se fermera après $_pageLimit page${_pageLimit > 1 ? 's' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                  ButtonSegment<OutputFormat>(
-                    value: OutputFormat.png,
-                    label: Text('PNG'),
-                  ),
-                ],
-                selected: {_selectedFormat},
-                onSelectionChanged: (newSelection) {
-                  setState(() {
-                    _selectedFormat = newSelection.first;
-                  });
-                },
+                ),
               ),
               const SizedBox(height: 24),
               if (_isScanning)
@@ -209,7 +279,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               const SizedBox(height: 50),
-            ],
+              ],
+            ),
           ),
         ),
       ),

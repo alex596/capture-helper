@@ -31,7 +31,10 @@ class PigeonCodec : StandardMessageCodec() {
                         stream.write(TYPE_SCAN_OPTIONS.toInt())
                         val encoded = listOf(
                             value["autoCompress"],
-                            value["compressionQuality"]
+                            value["compressionQuality"],
+                            value["outputFormat"],
+                            value["useAutomaticCapture"],
+                            value["pageLimit"]
                         )
                         writeValue(stream, encoded)
                     }
@@ -60,7 +63,10 @@ class PigeonCodec : StandardMessageCodec() {
                 val list = readValue(buffer) as List<*>
                 mapOf(
                     "autoCompress" to list[0],
-                    "compressionQuality" to list[1]
+                    "compressionQuality" to list[1],
+                    "outputFormat" to list.getOrNull(2),
+                    "useAutomaticCapture" to list.getOrNull(3),
+                    "pageLimit" to list.getOrNull(4)
                 )
             }
             TYPE_SCAN_RESULT -> {

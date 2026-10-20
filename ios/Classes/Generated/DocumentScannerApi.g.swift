@@ -74,6 +74,11 @@ struct ScanOptions {
   var compressionQuality: Int64
   /// Format de sortie : 'jpeg' ou 'png'
   var outputFormat: String
+  /// Si true, capture automatiquement dès que le document est détecté
+  /// Si false, l'utilisateur doit appuyer sur le bouton pour capturer
+  var useAutomaticCapture: Bool
+  /// Nombre maximum de pages à scanner (0 = illimité)
+  var pageLimit: Int64
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -81,11 +86,15 @@ struct ScanOptions {
     let autoCompress = pigeonVar_list[0] as! Bool
     let compressionQuality = pigeonVar_list[1] as! Int64
     let outputFormat = pigeonVar_list[2] as! String
+    let useAutomaticCapture = pigeonVar_list[3] as! Bool
+    let pageLimit = pigeonVar_list[4] as! Int64
 
     return ScanOptions(
       autoCompress: autoCompress,
       compressionQuality: compressionQuality,
-      outputFormat: outputFormat
+      outputFormat: outputFormat,
+      useAutomaticCapture: useAutomaticCapture,
+      pageLimit: pageLimit
     )
   }
   func toList() -> [Any?] {
@@ -93,6 +102,8 @@ struct ScanOptions {
       autoCompress,
       compressionQuality,
       outputFormat,
+      useAutomaticCapture,
+      pageLimit,
     ]
   }
 }

@@ -7,6 +7,7 @@ class DocumentScannerService: NSObject {
     private weak var presentingViewController: UIViewController?
     private var scanCompletion: ((Result<[URL], Error>) -> Void)?
     private var outputFormat: String = "jpeg"
+    private var pageLimit: Int = 0 // 0 = illimité
 
     enum ScanError: Error {
         case notAvailable
@@ -28,9 +29,14 @@ class DocumentScannerService: NSObject {
         }
     }
 
-    init(presentingViewController: UIViewController?, outputFormat: String = "jpeg") {
+    init(
+        presentingViewController: UIViewController?,
+        outputFormat: String = "jpeg",
+        pageLimit: Int = 0
+    ) {
         self.presentingViewController = presentingViewController
         self.outputFormat = outputFormat
+        self.pageLimit = pageLimit
         super.init()
     }
 
@@ -109,7 +115,15 @@ extension DocumentScannerService: VNDocumentCameraViewControllerDelegate {
 
             var imageURLs: [URL] = []
 
-            for i in 0..<scan.pageCount {
+            // Déterminer le nombre de pages à sauvegarder
+            let maxPages: Int
+            if self.pageLimit > 0 {
+                maxPages = min(self.pageLimit, scan.pageCount)
+            } else {
+                maxPages = scan.pageCount
+            }
+
+            for i in 0..<maxPages {
                 let image = scan.imageOfPage(at: i)
                 if let url = self.saveImage(image, index: i) {
                     imageURLs.append(url)

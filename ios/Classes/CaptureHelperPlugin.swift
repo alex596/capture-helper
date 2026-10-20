@@ -51,10 +51,13 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
         }
 
         // Créer le service de numérisation
+        // Note: VisionKit ne supporte pas la désactivation de la capture automatique.
+        // La capture automatique est toujours activée sur iOS (comportement natif de VNDocumentCameraViewController).
         if #available(iOS 13.0, *) {
             let scanner = DocumentScannerService(
                 presentingViewController: viewController,
-                outputFormat: options.outputFormat
+                outputFormat: options.outputFormat,
+                pageLimit: Int(options.pageLimit)
             )
             self.scannerService = scanner
 

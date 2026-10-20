@@ -20,6 +20,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
     private var activity: Activity? = null
     private var pendingResult: BasicMessageChannel.Reply<Any?>? = null
     private var outputFormat: String = "jpeg"
+    private var useAutomaticCapture: Boolean = true
+    private var pageLimit: Int = 0
     private lateinit var scanChannel: BasicMessageChannel<Any?>
     private lateinit var availabilityChannel: BasicMessageChannel<Any?>
 
@@ -83,10 +85,12 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
         }
 
         try {
-            // Extraire le format de sortie des options
+            // Extraire les options (Pigeon envoie les arguments sous forme de liste : [ScanOptions])
             @Suppress("UNCHECKED_CAST")
-            val options = message as? Map<String, Any?>
+            val options = (message as? List<*>)?.firstOrNull() as? Map<String, Any?>
             outputFormat = options?.get("outputFormat") as? String ?: "jpeg"
+            useAutomaticCapture = options?.get("useAutomaticCapture") as? Boolean ?: true
+            pageLimit = (options?.get("pageLimit") as? Number)?.toInt() ?: 0
 
             startScanning(reply)
         } catch (e: Exception) {
@@ -99,15 +103,28 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
     }
 
     private fun startScanning(reply: BasicMessageChannel.Reply<Any?>) {
-        val options = GmsDocumentScannerOptions.Builder()
+        val optionsBuilder = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(false)
-            .setPageLimit(10)
             .setResultFormats(
                 GmsDocumentScannerOptions.RESULT_FORMAT_JPEG,
                 GmsDocumentScannerOptions.RESULT_FORMAT_PDF
             )
-            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
-            .build()
+
+        // Configurer la limite de pages (0 = illimité : sans appel à setPageLimit,
+        // ML Kit n'est limité que par les ressources de l'appareil)
+        if (pageLimit > 0) {
+            optionsBuilder.setPageLimit(pageLimit)
+        }
+
+        // Configurer le mode de capture
+        val scannerMode = if (useAutomaticCapture) {
+            GmsDocumentScannerOptions.SCANNER_MODE_FULL
+        } else {
+            GmsDocumentScannerOptions.SCANNER_MODE_BASE
+        }
+        optionsBuilder.setScannerMode(scannerMode)
+
+        val options = optionsBuilder.build()
 
         val scanner = GmsDocumentScanning.getClient(options)
 

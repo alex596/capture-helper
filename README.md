@@ -211,6 +211,54 @@ final resultPNG = await captureHelper.scanDocument(
 - Fichiers plus légers pour le stockage/partage
 - Qualité largement suffisante pour la lecture
 
+### 🎯 Scanner avec limite de pages
+
+```dart
+// Limiter à 2 pages maximum
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    pageLimit: 2,  // Le scanner se ferme après 2 pages (Android)
+  ),
+);
+
+if (result.success) {
+  print('✅ ${result.imageCount} page(s) scannée(s) (max: 2)');
+}
+```
+
+### 📸 Scanner avec capture manuelle
+
+```dart
+// L'utilisateur doit appuyer sur le bouton pour capturer (Android uniquement)
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    useAutomaticCapture: false,  // Désactive la capture automatique
+  ),
+);
+
+// Note: Sur iOS, la capture automatique est toujours activée (limitation VisionKit)
+```
+
+### 🔄 Exemple complet avec toutes les options
+
+```dart
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    autoCompress: true,              // Compresser automatiquement
+    compressionQuality: 75,          // Qualité moyenne
+    outputFormat: OutputFormat.jpeg, // Format JPEG
+    useAutomaticCapture: false,      // Capture manuelle (Android)
+    pageLimit: 5,                    // Maximum 5 pages
+  ),
+);
+
+if (result.success) {
+  print('✅ ${result.imageCount} page(s) scannée(s)');
+  print('📄 Limite: 5 pages');
+  print('📸 Mode: Capture manuelle');
+}
+```
+
 ### 🗜️ Compresser une image existante
 
 Compresser une image déjà scannée pour réduire sa taille :
@@ -382,10 +430,26 @@ Options de configuration pour la numérisation.
 
 ```dart
 CaptureHelperScanOptions({
-  bool autoCompress = false,
-  int compressionQuality = 80, // 0-100
+  bool autoCompress = false,          // Compression automatique après scan
+  int compressionQuality = 80,         // Qualité de compression (0-100)
+  OutputFormat outputFormat = OutputFormat.jpeg, // Format de sortie (jpeg/png)
+  bool useAutomaticCapture = true,     // Capture auto quand document détecté
+  int pageLimit = 0,                   // Limite de pages (0 = illimité)
 })
 ```
+
+**Nouvelles options :**
+
+- **`useAutomaticCapture`** :
+  - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté
+  - `false` : L'utilisateur doit appuyer manuellement sur le bouton pour capturer
+  - ⚠️ **Note iOS** : VisionKit ne supporte pas la désactivation de la capture automatique. Cette option est ignorée sur iOS.
+  - ✅ **Android** : Utilise `SCANNER_MODE_BASE` (mode manuel) ou `SCANNER_MODE_FULL` (mode auto)
+
+- **`pageLimit`** :
+  - `0` (défaut) : Aucune limite, l'utilisateur peut scanner autant de pages qu'il veut
+  - `N > 0` : Limite le nombre de pages à N. Sur Android, le scanner se ferme automatiquement après N pages
+  - ⚠️ **Note iOS** : VisionKit ne ferme pas automatiquement le scanner. Le plugin limite le nombre de pages retournées.
 
 ### CaptureHelperScanResult
 
