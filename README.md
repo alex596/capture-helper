@@ -633,6 +633,10 @@ cd example
 flutter run
 ```
 
+> ⚠️ **Clonez le dépôt dans un dossier nommé `capture_helper`** (`git clone git@github.com:alex596/capture-helper.git capture_helper`).
+> Avec le nom par défaut `capture-helper`, le build iOS de l'exemple échoue en SPM :
+> `unable to override package 'capture_helper' because its identity 'capture-helper' doesn't match…`
+
 ## Limitations
 
 ### iOS
