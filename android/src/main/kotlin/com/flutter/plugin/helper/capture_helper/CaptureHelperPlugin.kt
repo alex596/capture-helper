@@ -197,7 +197,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
     private fun scanFailure(errorMessage: String) = ScanResult(
         imagePaths = emptyList(),
         success = false,
-        errorMessage = errorMessage
+        errorMessage = errorMessage,
+        ignoredPageCount = 0
     )
 
     private fun completeScan(result: Result<ScanResult>) {
@@ -228,7 +229,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                             if (autoCompress) {
                                 imagePaths = compressScannedImages(imagePaths, compressionQuality)
                             }
-                            ScanResult(imagePaths = imagePaths, success = true, errorMessage = null)
+                            // ML Kit arrête lui-même la capture à pageLimit : aucune page n'est ignorée
+                            ScanResult(imagePaths = imagePaths, success = true, errorMessage = null, ignoredPageCount = 0)
                         } catch (e: Exception) {
                             scanFailure("Failed to save images: ${e.message}")
                         }

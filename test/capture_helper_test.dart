@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:capture_helper/capture_helper.dart';
+import 'package:capture_helper/src/generated/document_scanner_api.g.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -162,6 +163,47 @@ void main() {
       final instance2 = CaptureHelper();
 
       expect(identical(instance1, instance2), true);
+    });
+  });
+
+  group('CaptureHelperScanResult.ignoredPageCount', () {
+    test('defaults to 0', () {
+      final result = CaptureHelperScanResult.success(['/a.jpg']);
+
+      expect(result.ignoredPageCount, 0);
+      expect(result.hasIgnoredPages, false);
+    });
+
+    test('reports ignored pages', () {
+      final result = CaptureHelperScanResult.success(['/a.jpg'], ignoredPageCount: 2);
+
+      expect(result.hasIgnoredPages, true);
+      expect(result, isNot(CaptureHelperScanResult.success(['/a.jpg'])));
+    });
+  });
+
+  group('CaptureHelper.scanDocument', () {
+    const channelName = 'dev.flutter.pigeon.capture_helper.DocumentScannerApi.scanDocument';
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    tearDown(() => messenger.setMockMessageHandler(channelName, null));
+
+    test('forwards ignoredPageCount from the platform', () async {
+      messenger.setMockMessageHandler(
+        channelName,
+        (_) async => DocumentScannerApi.pigeonChannelCodec.encodeMessage(<Object?>[
+          ScanResult(imagePaths: ['/a.jpg', '/b.jpg'], success: true, ignoredPageCount: 3),
+        ]),
+      );
+
+      final result = await CaptureHelper().scanDocument(
+        options: const CaptureHelperScanOptions(pageLimit: 2),
+      );
+
+      expect(result.success, true);
+      expect(result.imageCount, 2);
+      expect(result.ignoredPageCount, 3);
+      expect(result.hasIgnoredPages, true);
     });
   });
 

@@ -249,8 +249,17 @@ final result = await captureHelper.scanDocument(
 
 if (result.success) {
   print('✅ ${result.imageCount} page(s) scannée(s) (max: 2)');
+
+  // iOS : VisionKit ne permet pas d'arrêter la capture à N pages,
+  // les pages en trop sont ignorées et comptées dans ignoredPageCount
+  if (result.hasIgnoredPages) {
+    print('⚠️ ${result.ignoredPageCount} page(s) ignorée(s) (limite : 2)');
+  }
 }
 ```
+
+> 💡 Sur iOS, pensez à indiquer la limite à l'utilisateur avant d'ouvrir le scanner
+> (« 2 pages maximum ») : VisionKit le laisse capturer plus de pages que la limite.
 
 ### 📸 Scanner avec capture manuelle
 
@@ -510,7 +519,7 @@ CaptureHelperScanOptions({
 - **`pageLimit`** :
   - `0` (défaut) : Aucune limite, l'utilisateur peut scanner autant de pages qu'il veut
   - `N > 0` : Limite le nombre de pages à N. Sur Android, le scanner se ferme automatiquement après N pages
-  - ⚠️ **Note iOS** : VisionKit ne ferme pas automatiquement le scanner. Le plugin limite le nombre de pages retournées.
+  - ⚠️ **Note iOS** : VisionKit ne ferme pas automatiquement le scanner. Le plugin limite le nombre de pages retournées et indique le nombre de pages ignorées dans `ignoredPageCount`.
 
 ### CaptureHelperScanResult
 
@@ -521,6 +530,8 @@ Résultat d'une numérisation.
 - `bool success` - Indique si l'opération a réussi
 - `String? errorMessage` - Message d'erreur éventuel
 - `int imageCount` - Nombre d'images scannées
+- `int ignoredPageCount` - Pages capturées mais ignorées car au-delà de `pageLimit` (iOS uniquement, toujours 0 sur Android)
+- `bool hasIgnoredPages` - Indique si des pages ont été ignorées
 - `bool wasCancelled` - Indique si l'utilisateur a annulé
 
 ### CaptureHelperCompressionResult

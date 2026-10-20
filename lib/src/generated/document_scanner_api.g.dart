@@ -175,6 +175,7 @@ class ScanResult {
     required this.imagePaths,
     required this.success,
     this.errorMessage,
+    required this.ignoredPageCount,
   });
 
   /// Liste des chemins des images scannées
@@ -186,11 +187,16 @@ class ScanResult {
   /// Message d'erreur si applicable
   String? errorMessage;
 
+  /// Nombre de pages capturées mais ignorées car au-delà de pageLimit
+  /// (iOS uniquement : VisionKit ne permet pas d'arrêter la capture à N pages)
+  int ignoredPageCount;
+
   List<Object?> _toList() {
     return <Object?>[
       imagePaths,
       success,
       errorMessage,
+      ignoredPageCount,
     ];
   }
 
@@ -203,6 +209,7 @@ class ScanResult {
       imagePaths: (result[0]! as List<Object?>).cast<String?>(),
       success: result[1]! as bool,
       errorMessage: result[2] as String?,
+      ignoredPageCount: result[3]! as int,
     );
   }
 
@@ -215,7 +222,7 @@ class ScanResult {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(imagePaths, other.imagePaths) && _deepEquals(success, other.success) && _deepEquals(errorMessage, other.errorMessage);
+    return _deepEquals(imagePaths, other.imagePaths) && _deepEquals(success, other.success) && _deepEquals(errorMessage, other.errorMessage) && _deepEquals(ignoredPageCount, other.ignoredPageCount);
   }
 
   @override
@@ -224,7 +231,7 @@ class ScanResult {
 
   @override
   String toString() {
-    return 'ScanResult(imagePaths: $imagePaths, success: $success, errorMessage: $errorMessage)';
+    return 'ScanResult(imagePaths: $imagePaths, success: $success, errorMessage: $errorMessage, ignoredPageCount: $ignoredPageCount)';
   }
 }
 

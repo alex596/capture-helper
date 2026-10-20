@@ -83,6 +83,11 @@ class _HomePageState extends State<HomePage> {
           _statusMessage = 'Successfully scanned ${result.imageCount} image(s)';
         });
 
+        // iOS : les pages au-delà de pageLimit sont ignorées
+        if (result.hasIgnoredPages) {
+          _showMessage('${result.ignoredPageCount} page(s) ignored (page limit: $_pageLimit)');
+        }
+
         // Navigate to details page
         await Navigator.of(context).push(
           MaterialPageRoute(

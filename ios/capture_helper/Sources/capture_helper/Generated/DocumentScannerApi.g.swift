@@ -257,6 +257,9 @@ struct ScanResult: Hashable, CustomStringConvertible {
   var success: Bool
   /// Message d'erreur si applicable
   var errorMessage: String? = nil
+  /// Nombre de pages capturées mais ignorées car au-delà de pageLimit
+  /// (iOS uniquement : VisionKit ne permet pas d'arrêter la capture à N pages)
+  var ignoredPageCount: Int64
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -264,11 +267,13 @@ struct ScanResult: Hashable, CustomStringConvertible {
     let imagePaths = pigeonVar_list[0] as! [String?]
     let success = pigeonVar_list[1] as! Bool
     let errorMessage: String? = nilOrValue(pigeonVar_list[2])
+    let ignoredPageCount = pigeonVar_list[3] as! Int64
 
     return ScanResult(
       imagePaths: imagePaths,
       success: success,
-      errorMessage: errorMessage
+      errorMessage: errorMessage,
+      ignoredPageCount: ignoredPageCount
     )
   }
   func toList() -> [Any?] {
@@ -276,13 +281,14 @@ struct ScanResult: Hashable, CustomStringConvertible {
       imagePaths,
       success,
       errorMessage,
+      ignoredPageCount,
     ]
   }
   static func == (lhs: ScanResult, rhs: ScanResult) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return DocumentScannerApiPigeonInternal.deepEquals(lhs.imagePaths, rhs.imagePaths) && DocumentScannerApiPigeonInternal.deepEquals(lhs.success, rhs.success) && DocumentScannerApiPigeonInternal.deepEquals(lhs.errorMessage, rhs.errorMessage)
+    return DocumentScannerApiPigeonInternal.deepEquals(lhs.imagePaths, rhs.imagePaths) && DocumentScannerApiPigeonInternal.deepEquals(lhs.success, rhs.success) && DocumentScannerApiPigeonInternal.deepEquals(lhs.errorMessage, rhs.errorMessage) && DocumentScannerApiPigeonInternal.deepEquals(lhs.ignoredPageCount, rhs.ignoredPageCount)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -290,10 +296,11 @@ struct ScanResult: Hashable, CustomStringConvertible {
     DocumentScannerApiPigeonInternal.deepHash(value: imagePaths, hasher: &hasher)
     DocumentScannerApiPigeonInternal.deepHash(value: success, hasher: &hasher)
     DocumentScannerApiPigeonInternal.deepHash(value: errorMessage, hasher: &hasher)
+    DocumentScannerApiPigeonInternal.deepHash(value: ignoredPageCount, hasher: &hasher)
   }
 
   public var description: String {
-    return "ScanResult(imagePaths: \(String(describing: imagePaths)), success: \(String(describing: success)), errorMessage: \(String(describing: errorMessage)))"
+    return "ScanResult(imagePaths: \(String(describing: imagePaths)), success: \(String(describing: success)), errorMessage: \(String(describing: errorMessage)), ignoredPageCount: \(String(describing: ignoredPageCount)))"
   }
 }
 

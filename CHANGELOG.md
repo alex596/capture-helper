@@ -33,6 +33,8 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - `N > 0` : Limite le scanner à N pages maximum
   - ✅ **Android** : Le scanner se ferme automatiquement après N pages
   - ⚠️ **iOS** : Le scanner ne se ferme pas automatiquement, mais seules les N premières pages sont retournées
+  - Nouveau champ `ignoredPageCount` (et `hasIgnoredPages`) dans `CaptureHelperScanResult` : nombre de pages
+    capturées puis ignorées car au-delà de la limite (toujours 0 sur Android)
 
 ### Corrections
 - **Android** : Les options de scan (`outputFormat`, `useAutomaticCapture`, `pageLimit`) étaient ignorées

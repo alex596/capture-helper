@@ -48,10 +48,15 @@ class ScanResult {
   /// Message d'erreur si applicable
   final String? errorMessage;
 
+  /// Nombre de pages capturées mais ignorées car au-delà de pageLimit
+  /// (iOS uniquement : VisionKit ne permet pas d'arrêter la capture à N pages)
+  final int ignoredPageCount;
+
   ScanResult({
     required this.imagePaths,
     required this.success,
     this.errorMessage,
+    required this.ignoredPageCount,
   });
 }
 

@@ -106,6 +106,7 @@ class ScanResult {
   final List<String?> imagePaths;
   final bool success;
   final String? errorMessage;
+  final int ignoredPageCount;     // Pages au-delà de pageLimit (iOS uniquement, 0 sur Android)
 }
 
 class CompressionResult {
@@ -178,7 +179,8 @@ Les méthodes publiques **ne lèvent jamais d'exception** : l'appelant teste tou
   `outputFormat: OutputFormat.jpeg`, `useAutomaticCapture: true`, `pageLimit: 0`. Des `assert` vérifient
   que `compressionQuality` est entre 0 et 100 et que `pageLimit` vaut au moins 0. Implémente `copyWith`, `==`
   et `hashCode`.
-- **`CaptureHelperScanResult`** : `imagePaths`, `success`, `errorMessage`, `imageCount`. `wasCancelled`
+- **`CaptureHelperScanResult`** : `imagePaths`, `success`, `errorMessage`, `imageCount`,
+  `ignoredPageCount` (0 par défaut) et `hasIgnoredPages`. `wasCancelled`
   est déduit du message d'erreur (`!success` et message contenant `cancel`) : les messages d'annulation
   natifs doivent donc conserver ce mot.
 - **`CaptureHelperCompressionResult`** : tailles en octets, plus `compressionRatio`, `reductionPercentage`,
@@ -200,8 +202,10 @@ Les méthodes publiques **ne lèvent jamais d'exception** : l'appelant teste tou
    compatible avec le cycle de vie UIScene et permet de présenter le scanner par-dessus un écran modal.
 3. **VisionKit** : `DocumentScannerService` présente un `VNDocumentCameraViewController`. La capture
    automatique ne peut pas être désactivée sur iOS : `useAutomaticCapture` est ignoré.
-4. **Résultat** : seules les `pageLimit` premières pages sont conservées (VisionKit ne permet pas de
-   bloquer la prise de vue au-delà).
+4. **Résultat** : seules les `pageLimit` premières pages sont conservées. Les autres sont comptées dans
+   `ignoredPageCount` (`scan.pageCount - pageLimit`). `VNDocumentCameraViewController` n'expose aucune option
+   de limite, et son delegate n'est appelé qu'à la fin du scan : il est donc impossible d'arrêter la capture
+   après N pages.
 5. **Enregistrement** : dans le répertoire de sortie du plugin (voir [Stockage des fichiers](#-stockage-des-fichiers)),
    nommé `scan_<timestamp>_<index>.jpg` (JPEG qualité 1.0) ou `.png`.
 6. **Compression automatique** : si `autoCompress` vaut `true`, chaque image passe par
@@ -322,7 +326,7 @@ Avant la 1.2.0, iOS écrivait dans `tmp/` (et à côté de la source pour les co
 | Fonctionnalité | iOS | Android |
 |----------------|-----|---------|
 | `useAutomaticCapture: false` | Ignoré (capture toujours automatique) | `SCANNER_MODE_BASE` (à vérifier) |
-| `pageLimit: N` | Le scanner reste ouvert ; seules les N premières pages sont retournées | Le scanner se ferme après N pages |
+| `pageLimit: N` | Le scanner reste ouvert ; seules les N premières pages sont retournées, les autres sont comptées dans `ignoredPageCount` | Le scanner se ferme après N pages (`ignoredPageCount` = 0) |
 | `outputFormat: png` | ✅ | ✅ |
 | `autoCompress: true` | ✅ | ✅ |
 | `compressImage` | ✅ | ✅ |
@@ -395,6 +399,7 @@ flutter:
 |---------|--------|
 | `test/capture_helper_test.dart` | Modèles Dart (options, résultats, formatage, ratios) et singleton |
 | `android/src/test/.../CaptureHelperPluginTest.kt` | `isScanningAvailable`, `scanDocument` sans activité, `compressImage` sur un fichier absent, `compressPdf`, `clearTemporaryFiles` sans contexte |
+| `test/capture_helper_test.dart` (groupes `ignoredPageCount` et `scanDocument`) | Valeur par défaut, égalité, transmission de `ignoredPageCount` depuis la plateforme (mock du canal Pigeon) |
 | `test/capture_helper_test.dart` (groupe `clearTemporaryFiles`) | Résultat natif, erreur plateforme et absence d'implémentation, via un mock du canal Pigeon |
 | `example/integration_test/plugin_integration_test.dart` | Disponibilité de l'API sur appareil |
 

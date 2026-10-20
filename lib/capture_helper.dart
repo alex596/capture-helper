@@ -81,6 +81,7 @@ class CaptureHelper {
         imagePaths: pigeonResult.imagePaths.where((path) => path != null).cast<String>().toList(),
         success: pigeonResult.success,
         errorMessage: pigeonResult.errorMessage,
+        ignoredPageCount: pigeonResult.ignoredPageCount,
       );
     } catch (e) {
       return CaptureHelperScanResult.failure(

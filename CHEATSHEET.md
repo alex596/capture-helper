@@ -77,8 +77,9 @@ await CaptureHelper().clearTemporaryFiles();
 
 ```dart
 if (result.success) {
-  result.imagePaths;     // List<String>
-  result.imageCount;     // int
+  result.imagePaths;       // List<String>
+  result.imageCount;       // int
+  result.ignoredPageCount; // int : pages au-delà de pageLimit (iOS uniquement)
 } else if (result.wasCancelled) {
   // Utilisateur a annulé
 } else {

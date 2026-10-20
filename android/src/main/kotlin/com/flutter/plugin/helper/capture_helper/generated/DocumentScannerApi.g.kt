@@ -268,7 +268,12 @@ data class ScanResult (
   /** Indique si l'opération a réussi */
   val success: Boolean,
   /** Message d'erreur si applicable */
-  val errorMessage: String? = null
+  val errorMessage: String? = null,
+  /**
+   * Nombre de pages capturées mais ignorées car au-delà de pageLimit
+   * (iOS uniquement : VisionKit ne permet pas d'arrêter la capture à N pages)
+   */
+  val ignoredPageCount: Long
 )
  {
   companion object {
@@ -276,7 +281,8 @@ data class ScanResult (
       val imagePaths = pigeonVar_list[0] as List<String?>
       val success = pigeonVar_list[1] as Boolean
       val errorMessage = pigeonVar_list[2] as String?
-      return ScanResult(imagePaths, success, errorMessage)
+      val ignoredPageCount = pigeonVar_list[3] as Long
+      return ScanResult(imagePaths, success, errorMessage, ignoredPageCount)
     }
   }
   fun toList(): List<Any?> {
@@ -284,6 +290,7 @@ data class ScanResult (
       imagePaths,
       success,
       errorMessage,
+      ignoredPageCount,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -294,7 +301,7 @@ data class ScanResult (
       return true
     }
     val other = other as ScanResult
-    return DocumentScannerApiPigeonUtils.deepEquals(this.imagePaths, other.imagePaths) && DocumentScannerApiPigeonUtils.deepEquals(this.success, other.success) && DocumentScannerApiPigeonUtils.deepEquals(this.errorMessage, other.errorMessage)
+    return DocumentScannerApiPigeonUtils.deepEquals(this.imagePaths, other.imagePaths) && DocumentScannerApiPigeonUtils.deepEquals(this.success, other.success) && DocumentScannerApiPigeonUtils.deepEquals(this.errorMessage, other.errorMessage) && DocumentScannerApiPigeonUtils.deepEquals(this.ignoredPageCount, other.ignoredPageCount)
   }
 
   override fun hashCode(): Int {
@@ -302,10 +309,11 @@ data class ScanResult (
     result = 31 * result + DocumentScannerApiPigeonUtils.deepHash(this.imagePaths)
     result = 31 * result + DocumentScannerApiPigeonUtils.deepHash(this.success)
     result = 31 * result + DocumentScannerApiPigeonUtils.deepHash(this.errorMessage)
+    result = 31 * result + DocumentScannerApiPigeonUtils.deepHash(this.ignoredPageCount)
     return result
   }
   override fun toString(): String {
-    return "ScanResult(imagePaths=$imagePaths, success=$success, errorMessage=$errorMessage)"
+    return "ScanResult(imagePaths=$imagePaths, success=$success, errorMessage=$errorMessage, ignoredPageCount=$ignoredPageCount)"
   }
 }
 

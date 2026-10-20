@@ -5,9 +5,17 @@ import VisionKit
 @available(iOS 13.0, *)
 class DocumentScannerService: NSObject {
     private weak var presentingViewController: UIViewController?
-    private var scanCompletion: ((Result<[URL], Error>) -> Void)?
+    private var scanCompletion: ((Result<ScanOutput, Error>) -> Void)?
     private var outputFormat: String = "jpeg"
     private var pageLimit: Int = 0 // 0 = illimité
+
+    /// Résultat d'une numérisation réussie
+    struct ScanOutput {
+        /// Fichiers des pages conservées
+        let imageURLs: [URL]
+        /// Pages capturées mais ignorées car au-delà de pageLimit
+        let ignoredPageCount: Int
+    }
 
     enum ScanError: Error {
         case notAvailable
@@ -46,7 +54,7 @@ class DocumentScannerService: NSObject {
     }
 
     /// Lance la numérisation de documents
-    func scanDocument(completion: @escaping (Result<[URL], Error>) -> Void) {
+    func scanDocument(completion: @escaping (Result<ScanOutput, Error>) -> Void) {
         guard Self.isScanningAvailable() else {
             completion(.failure(ScanError.notAvailable))
             return
@@ -130,7 +138,10 @@ extension DocumentScannerService: VNDocumentCameraViewControllerDelegate {
             if imageURLs.isEmpty {
                 self.scanCompletion?(.failure(ScanError.noImagesScanned))
             } else {
-                self.scanCompletion?(.success(imageURLs))
+                self.scanCompletion?(.success(ScanOutput(
+                    imageURLs: imageURLs,
+                    ignoredPageCount: scan.pageCount - maxPages
+                )))
             }
 
             self.scanCompletion = nil

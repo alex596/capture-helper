@@ -28,7 +28,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                 let scanResult = ScanResult(
                     imagePaths: [],
                     success: false,
-                    errorMessage: error.localizedDescription
+                    errorMessage: error.localizedDescription,
+                    ignoredPageCount: 0
                 )
                 completion(.success(scanResult))
             }
@@ -44,7 +45,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
             let scanResult = ScanResult(
                 imagePaths: [],
                 success: false,
-                errorMessage: "No view controller available"
+                errorMessage: "No view controller available",
+                ignoredPageCount: 0
             )
             completion(.success(scanResult))
             return
@@ -65,8 +67,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                 guard let self = self else { return }
 
                 switch result {
-                case .success(let urls):
-                    var imagePaths = urls.map { $0.path }
+                case .success(let output):
+                    var imagePaths = output.imageURLs.map { $0.path }
 
                     // Compression automatique si demandée
                     if options.autoCompress {
@@ -79,7 +81,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                     let scanResult = ScanResult(
                         imagePaths: imagePaths,
                         success: true,
-                        errorMessage: nil
+                        errorMessage: nil,
+                        ignoredPageCount: Int64(output.ignoredPageCount)
                     )
                     completion(.success(scanResult))
 
@@ -87,7 +90,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                     let scanResult = ScanResult(
                         imagePaths: [],
                         success: false,
-                        errorMessage: error.localizedDescription
+                        errorMessage: error.localizedDescription,
+                        ignoredPageCount: 0
                     )
                     completion(.success(scanResult))
                 }
@@ -98,7 +102,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
             let scanResult = ScanResult(
                 imagePaths: [],
                 success: false,
-                errorMessage: "Document scanning requires iOS 13.0 or later"
+                errorMessage: "Document scanning requires iOS 13.0 or later",
+                ignoredPageCount: 0
             )
             completion(.success(scanResult))
         }
