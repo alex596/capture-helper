@@ -10,17 +10,25 @@ class CaptureHelperScanResult {
   /// Message d'erreur si applicable
   final String? errorMessage;
 
+  /// Nombre de pages capturées mais ignorées car au-delà de `pageLimit`
+  ///
+  /// Toujours 0 sur Android (le scanner s'arrête à `pageLimit`). Sur iOS, VisionKit ne permet
+  /// pas de limiter la capture : les pages en trop sont ignorées et comptées ici.
+  final int ignoredPageCount;
+
   const CaptureHelperScanResult({
     required this.imagePaths,
     required this.success,
     this.errorMessage,
+    this.ignoredPageCount = 0,
   });
 
   /// Crée un résultat réussi
-  factory CaptureHelperScanResult.success(List<String> imagePaths) {
+  factory CaptureHelperScanResult.success(List<String> imagePaths, {int ignoredPageCount = 0}) {
     return CaptureHelperScanResult(
       imagePaths: imagePaths,
       success: true,
+      ignoredPageCount: ignoredPageCount,
     );
   }
 
@@ -45,11 +53,15 @@ class CaptureHelperScanResult {
   /// Nombre d'images scannées
   int get imageCount => imagePaths.length;
 
+  /// Indique si des pages ont été ignorées car au-delà de `pageLimit` (iOS uniquement)
+  bool get hasIgnoredPages => ignoredPageCount > 0;
+
   /// Vérifie si l'utilisateur a annulé
   bool get wasCancelled => !success && errorMessage?.contains('cancel') == true;
 
   @override
-  String toString() => 'CaptureHelperScanResult(success: $success, imageCount: $imageCount, errorMessage: $errorMessage)';
+  String toString() =>
+      'CaptureHelperScanResult(success: $success, imageCount: $imageCount, ignoredPageCount: $ignoredPageCount, errorMessage: $errorMessage)';
 
   @override
   bool operator ==(Object other) {
@@ -58,11 +70,12 @@ class CaptureHelperScanResult {
     return other is CaptureHelperScanResult &&
         other.success == success &&
         other.errorMessage == errorMessage &&
+        other.ignoredPageCount == ignoredPageCount &&
         _listEquals(other.imagePaths, imagePaths);
   }
 
   @override
-  int get hashCode => success.hashCode ^ errorMessage.hashCode ^ imagePaths.hashCode;
+  int get hashCode => success.hashCode ^ errorMessage.hashCode ^ ignoredPageCount.hashCode ^ imagePaths.hashCode;
 
   bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;

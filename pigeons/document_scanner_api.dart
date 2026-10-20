@@ -4,10 +4,10 @@ import 'package:pigeon/pigeon.dart';
   PigeonOptions(
     dartOut: 'lib/src/generated/document_scanner_api.g.dart',
     dartOptions: DartOptions(),
-    swiftOut: 'ios/Classes/Generated/DocumentScannerApi.g.swift',
+    swiftOut: 'ios/capture_helper/Sources/capture_helper/Generated/DocumentScannerApi.g.swift',
     swiftOptions: SwiftOptions(),
     kotlinOut: 'android/src/main/kotlin/com/flutter/plugin/helper/capture_helper/generated/DocumentScannerApi.g.kt',
-    kotlinOptions: KotlinOptions(),
+    kotlinOptions: KotlinOptions(package: 'com.flutter.plugin.helper.capture_helper.generated'),
   ),
 )
 /// Options pour la numérisation de documents
@@ -21,10 +21,19 @@ class ScanOptions {
   /// Format de sortie : 'jpeg' ou 'png'
   final String outputFormat;
 
+  /// Si true, capture automatiquement dès que le document est détecté
+  /// Si false, l'utilisateur doit appuyer sur le bouton pour capturer
+  final bool useAutomaticCapture;
+
+  /// Nombre maximum de pages à scanner (0 = illimité)
+  final int pageLimit;
+
   ScanOptions({
     required this.autoCompress,
     required this.compressionQuality,
     required this.outputFormat,
+    required this.useAutomaticCapture,
+    required this.pageLimit,
   });
 }
 
@@ -39,10 +48,15 @@ class ScanResult {
   /// Message d'erreur si applicable
   final String? errorMessage;
 
+  /// Nombre de pages capturées mais ignorées car au-delà de pageLimit
+  /// (iOS uniquement : VisionKit ne permet pas d'arrêter la capture à N pages)
+  final int ignoredPageCount;
+
   ScanResult({
     required this.imagePaths,
     required this.success,
     this.errorMessage,
+    required this.ignoredPageCount,
   });
 }
 
@@ -76,17 +90,21 @@ class CompressionResult {
 @HostApi()
 abstract class DocumentScannerApi {
   /// Lance l'interface de numérisation de documents
-  @async
+  @asyncCallback
   ScanResult scanDocument(ScanOptions options);
 
   /// Compresse une image
-  @async
+  @asyncCallback
   CompressionResult compressImage(String imagePath, int quality);
 
   /// Compresse un PDF
-  @async
+  @asyncCallback
   CompressionResult compressPdf(String pdfPath, int quality);
 
   /// Vérifie si la numérisation est disponible sur l'appareil
   bool isScanningAvailable();
+
+  /// Supprime tous les fichiers produits par le plugin (sous-dossier `capture_helper/` du cache)
+  @asyncCallback
+  bool clearTemporaryFiles();
 }

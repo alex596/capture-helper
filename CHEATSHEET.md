@@ -7,7 +7,7 @@ Guide de référence rapide pour `capture_helper`.
 ```yaml
 # pubspec.yaml
 dependencies:
-  capture_helper: ^1.0.0
+  capture_helper: ^1.2.0
 ```
 
 ```bash
@@ -39,6 +39,9 @@ final result = await CaptureHelper().scanDocument(
   options: CaptureHelperScanOptions(
     autoCompress: true,
     compressionQuality: 80,
+    outputFormat: OutputFormat.jpeg, // ou OutputFormat.png
+    useAutomaticCapture: false,      // capture manuelle (Android uniquement)
+    pageLimit: 3,                    // 0 = illimité
   ),
 );
 ```
@@ -61,14 +64,22 @@ final result = await CaptureHelper().compressPdf(
 );
 ```
 
+### 🧹 Nettoyer les fichiers temporaires
+
+```dart
+// Les fichiers produits sont dans le cache (capture_helper/) : copiez ceux à conserver, puis
+await CaptureHelper().clearTemporaryFiles();
+```
+
 ## Résultats
 
 ### ScanResult
 
 ```dart
 if (result.success) {
-  result.imagePaths;     // List<String>
-  result.imageCount;     // int
+  result.imagePaths;       // List<String>
+  result.imageCount;       // int
+  result.ignoredPageCount; // int : pages au-delà de pageLimit (iOS uniquement)
 } else if (result.wasCancelled) {
   // Utilisateur a annulé
 } else {
@@ -167,24 +178,23 @@ try {
 
 ### Android (automatique)
 
-Permissions ajoutées automatiquement :
-- `CAMERA`
-- `READ_EXTERNAL_STORAGE` (API < 33)
-- `READ_MEDIA_IMAGES` (API 33+)
+Permission ajoutée automatiquement :
+- `CAMERA` (seule permission requise, les images sont stockées dans le répertoire privé de l'app)
 
 ## Contraintes
 
 | Plateforme | Min Version | Notes |
 |------------|-------------|-------|
-| iOS | 13.0+ | VisionKit, appareil physique requis |
-| Android | API 21+ | ML Kit, Google Play Services requis |
+| Flutter | 3.44+ | Dart 3.12+ |
+| iOS | 13.0+ | VisionKit, appareil physique requis, SPM et CocoaPods |
+| Android | API 24+ | ML Kit, Google Play Services requis |
 
 ## Liens utiles
 
 - [README complet](README.md)
 - [Exemples détaillés](EXAMPLES.md)
-- [Dépannage](TROUBLESHOOTING.md)
-- [Documentation technique](docs/TECHS.md)
+- [Historique des versions](CHANGELOG.md)
+- [Spécifications fonctionnelles](doc/SPECS.md)
 
 ---
 

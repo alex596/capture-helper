@@ -5,9 +5,70 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2026-10-20
+
+### ⚠️ Prérequis
+- **Flutter** : Version minimale passée à Flutter 3.44 / Dart 3.12
+
+### ⚠️ Changement de comportement : stockage des fichiers
+- Tous les fichiers produits (scans et compressions) sont écrits dans un sous-dossier dédié du **cache**
+  de l'application :
+  - **iOS** : `Library/Caches/capture_helper/` (auparavant `tmp/`, et à côté de la source pour les compressions)
+  - **Android** : `cacheDir/capture_helper/` (auparavant `filesDir`, persistant)
+- Ces fichiers sont temporaires : l'application doit **copier** ceux qu'elle souhaite conserver
+- Nouvelle méthode `clearTemporaryFiles()` pour vider ce dossier
+
+### Ajouts
+- **Nettoyage** : Nouvelle méthode `CaptureHelper().clearTemporaryFiles()` qui supprime tous les fichiers
+  produits par le plugin (sous-dossier `capture_helper/` du cache). Retourne `true` en cas de succès.
+
+- **Capture automatique/manuelle** : Nouveau paramètre `useAutomaticCapture` dans `CaptureHelperScanOptions`
+  - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté
+  - `false` : L'utilisateur doit appuyer manuellement sur le bouton pour capturer
+  - ✅ **Android** : Pleinement fonctionnel (utilise `SCANNER_MODE_BASE` pour le mode manuel)
+  - ⚠️ **iOS** : Option ignorée car VisionKit ne supporte pas la désactivation de la capture automatique
+
+- **Limite de pages** : Nouveau paramètre `pageLimit` dans `CaptureHelperScanOptions`
+  - `0` (défaut) : Aucune limite, l'utilisateur peut scanner autant de pages qu'il souhaite
+  - `N > 0` : Limite le scanner à N pages maximum
+  - ✅ **Android** : Le scanner se ferme automatiquement après N pages
+  - ⚠️ **iOS** : Le scanner ne se ferme pas automatiquement, mais seules les N premières pages sont retournées
+  - Nouveau champ `ignoredPageCount` (et `hasIgnoredPages`) dans `CaptureHelperScanResult` : nombre de pages
+    capturées puis ignorées car au-delà de la limite (toujours 0 sur Android)
+
+### Corrections
+- **Android** : Les options de scan (`outputFormat`, `useAutomaticCapture`, `pageLimit`) étaient ignorées
+  car le message Pigeon n'était pas décodé correctement par un codec écrit à la main. Le plugin utilise
+  désormais l'API Pigeon générée (`DocumentScannerApi`) ; le format PNG est bien pris en compte sur Android.
+- **Android** : Suppression de la limite implicite de pages, `pageLimit = 0` signifie réellement « illimité »
+- **Android** : `autoCompress` est désormais appliqué après le scan (il était ignoré, seul iOS compressait)
+- **Android** : Les fichiers compressés sont nommés `<nom>_compressed.<ext>` comme sur iOS ; l'ancien nommage
+  par timestamp pouvait faire écraser des pages compressées dans la même milliseconde
+- **Android** : `compressPdf` renvoie une erreur explicite (non supporté) au lieu d'un `channel-error`
+- **Android** : Un second scan lancé pendant un scan en cours est refusé (`ALREADY_ACTIVE`)
+- **iOS** : Recherche du view controller via la scène active (compatible UIScene) et présentation
+  au-dessus d'un éventuel écran modal ; remplace `UIApplication.shared.windows`, déprécié
+
+### Maintenance
+- **iOS** : Support de **Swift Package Manager** (en plus de CocoaPods)
+  - Sources déplacées de `ios/Classes` vers `ios/capture_helper/Sources/capture_helper`
+  - Privacy manifest (`PrivacyInfo.xcprivacy`) désormais embarqué, avec déclaration de l'accès
+    aux métadonnées de fichiers (`NSPrivacyAccessedAPICategoryFileTimestamp`, raison `C617.1`)
+  - Podspec : métadonnées complétées (version, description, auteur, licence)
+- **Android** : Migration vers le Kotlin intégré d'AGP 9 (suppression de `kotlin-android`)
+  - Compatible avec les apps en `android.builtInKotlin=true` comme `false`
+- **Android** : ML Kit Document Scanner `16.0.0-beta1` → `16.0.0` (stable)
+- **Pigeon** : 22.7 → 29.0 (méthodes `@asyncCallback` pour conserver les signatures à callback)
+  - Ajout de la dépendance `meta`, requise par le code généré
+- **Lints** : `flutter_lints` 5 → 6, suppression du plugin d'analyse `custom_lint` inutilisé
+
+### Exemple
+- Ajout de contrôles UI pour tester les nouvelles options (capture automatique, limite de pages 0-10)
+- AGP 9.1.0, Kotlin 2.4.0 et Gradle 9.3.1
+- Migrations Flutter 3.47 (cycle de vie UIScene, iOS 15 minimum, `NSCameraUsageDescription`)
+
 ## [1.1.1]
-### Flutter
-- Mise à jour du sample
+- **Flutter** : Mise à jour du sample
 
 ## [1.1.0]
 
@@ -28,13 +89,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Android** : Ajout explicite de la permission CAMERA dans AndroidManifest.xml
   - Améliore la clarté et la compatibilité
 
-###  Flutter
-- Downgrade sdk: ^3.9.0 -> ^3.8.0
-
 ## [1.0.1]
 
-###  Flutter
-- Downgrade sdk: ^3.9.0 -> ^3.8.0
+- **Flutter** : Downgrade sdk: ^3.9.0 -> ^3.8.0
 
 ## [1.0.0]
 ### iOS | Android | Flutter

@@ -44,6 +44,10 @@ class CaptureHelper {
   /// - Statut de l'opération
   /// - Message d'erreur éventuel
   ///
+  /// Les fichiers produits sont écrits dans le cache de l'application (sous-dossier
+  /// `capture_helper/`) et peuvent être supprimés par le système : copiez-les dans un
+  /// répertoire persistant pour les conserver.
+  ///
   /// Exemple d'utilisation :
   /// ```dart
   /// final result = await CaptureHelper().scanDocument(
@@ -67,6 +71,8 @@ class CaptureHelper {
         autoCompress: options.autoCompress,
         compressionQuality: options.compressionQuality,
         outputFormat: options.outputFormat.name, // 'jpeg' ou 'png'
+        useAutomaticCapture: options.useAutomaticCapture,
+        pageLimit: options.pageLimit,
       );
 
       final pigeonResult = await _api.scanDocument(pigeonOptions);
@@ -75,6 +81,7 @@ class CaptureHelper {
         imagePaths: pigeonResult.imagePaths.where((path) => path != null).cast<String>().toList(),
         success: pigeonResult.success,
         errorMessage: pigeonResult.errorMessage,
+        ignoredPageCount: pigeonResult.ignoredPageCount,
       );
     } catch (e) {
       return CaptureHelperScanResult.failure(
@@ -95,6 +102,10 @@ class CaptureHelper {
   /// - Chemin du fichier compressé
   /// - Tailles originale et compressée
   /// - Statistiques de compression
+  ///
+  /// Les fichiers produits sont écrits dans le cache de l'application (sous-dossier
+  /// `capture_helper/`) et peuvent être supprimés par le système : copiez-les dans un
+  /// répertoire persistant pour les conserver.
   ///
   /// Exemple d'utilisation :
   /// ```dart
@@ -129,6 +140,27 @@ class CaptureHelper {
       return CaptureHelperCompressionResult.failure(
         errorMessage: 'Failed to compress image: ${e.toString()}',
       );
+    }
+  }
+
+  /// Supprime tous les fichiers produits par le plugin
+  ///
+  /// Vide le sous-dossier `capture_helper/` du cache de l'application, qui contient
+  /// les pages scannées et les fichiers compressés. Les chemins renvoyés précédemment
+  /// par [scanDocument], [compressImage] et [compressPdf] ne sont plus valides ensuite.
+  ///
+  /// Retourne `true` si le nettoyage a réussi (ou s'il n'y avait rien à supprimer).
+  ///
+  /// Exemple d'utilisation :
+  /// ```dart
+  /// // Après avoir envoyé ou copié les documents
+  /// await CaptureHelper().clearTemporaryFiles();
+  /// ```
+  Future<bool> clearTemporaryFiles() async {
+    try {
+      return await _api.clearTemporaryFiles();
+    } catch (e) {
+      return false;
     }
   }
 

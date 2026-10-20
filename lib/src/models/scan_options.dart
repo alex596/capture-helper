@@ -16,28 +16,45 @@ class CaptureHelperScanOptions {
   /// - PNG : Plus lourd, compression sans perte
   final OutputFormat outputFormat;
 
+  /// Si true, capture automatiquement dès que le document est détecté
+  /// Si false, l'utilisateur doit appuyer sur le bouton pour capturer
+  /// Par défaut : true
+  final bool useAutomaticCapture;
+
+  /// Nombre maximum de pages à scanner
+  /// - 0 : illimité (défaut)
+  /// - N > 0 : limite à N pages, puis ferme automatiquement le scanner
+  final int pageLimit;
+
   const CaptureHelperScanOptions({
     this.autoCompress = false,
     this.compressionQuality = 80,
     this.outputFormat = OutputFormat.jpeg,
-  }) : assert(compressionQuality >= 0 && compressionQuality <= 100, 'compressionQuality doit être entre 0 et 100');
+    this.useAutomaticCapture = true,
+    this.pageLimit = 0,
+  }) : assert(compressionQuality >= 0 && compressionQuality <= 100, 'compressionQuality doit être entre 0 et 100'),
+       assert(pageLimit >= 0, 'pageLimit doit être >= 0');
 
   /// Crée une copie avec des valeurs modifiées
   CaptureHelperScanOptions copyWith({
     bool? autoCompress,
     int? compressionQuality,
     OutputFormat? outputFormat,
+    bool? useAutomaticCapture,
+    int? pageLimit,
   }) {
     return CaptureHelperScanOptions(
       autoCompress: autoCompress ?? this.autoCompress,
       compressionQuality: compressionQuality ?? this.compressionQuality,
       outputFormat: outputFormat ?? this.outputFormat,
+      useAutomaticCapture: useAutomaticCapture ?? this.useAutomaticCapture,
+      pageLimit: pageLimit ?? this.pageLimit,
     );
   }
 
   @override
   String toString() =>
-      'CaptureHelperScanOptions(autoCompress: $autoCompress, compressionQuality: $compressionQuality, outputFormat: $outputFormat)';
+      'CaptureHelperScanOptions(autoCompress: $autoCompress, compressionQuality: $compressionQuality, outputFormat: $outputFormat, useAutomaticCapture: $useAutomaticCapture, pageLimit: $pageLimit)';
 
   @override
   bool operator ==(Object other) {
@@ -46,9 +63,12 @@ class CaptureHelperScanOptions {
     return other is CaptureHelperScanOptions &&
         other.autoCompress == autoCompress &&
         other.compressionQuality == compressionQuality &&
-        other.outputFormat == outputFormat;
+        other.outputFormat == outputFormat &&
+        other.useAutomaticCapture == useAutomaticCapture &&
+        other.pageLimit == pageLimit;
   }
 
   @override
-  int get hashCode => autoCompress.hashCode ^ compressionQuality.hashCode ^ outputFormat.hashCode;
+  int get hashCode =>
+      autoCompress.hashCode ^ compressionQuality.hashCode ^ outputFormat.hashCode ^ useAutomaticCapture.hashCode ^ pageLimit.hashCode;
 }

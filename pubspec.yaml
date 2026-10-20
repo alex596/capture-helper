@@ -1,25 +1,26 @@
 name: capture_helper
 description: "Cross-platform Flutter plugin for advanced document capture, image enhancement,
   and PDF compression. Uses native VisionKit (iOS) and ML Kit (Android) for optimal results."
-version: 1.1.1
+version: 1.2.0
 homepage: https://alexislouis.xyz
 repository: https://github.com/alex596/capture-helper
 issue_tracker: https://github.com/alex596/capture-helper/issues
 
 environment:
-  sdk: ^3.8.0
-  flutter: '>=3.3.0'
+  sdk: ^3.12.0
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  meta: ^1.16.0
   plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
-  pigeon: ^22.7.0
+  flutter_lints: ^6.0.0
+  pigeon: ^29.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

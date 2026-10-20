@@ -4,28 +4,58 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 
 ## 📋 Table des matières
 
-- [Fonctionnalités](#fonctionnalités)
-- [Plateformes supportées](#plateformes-supportées)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [🚀 Démarrage rapide](#-démarrage-rapide)
-- [Utilisation](#utilisation)
-  - [📸 Scanner une image simple](#-scanner-une-image-simple)
-  - [📦 Scanner avec compression automatique](#-scanner-avec-compression-automatique)
-  - [🗜️ Compresser une image existante](#%EF%B8%8F-compresser-une-image-existante)
-  - [📏 Scanner avec limite de poids](#-scanner-avec-limite-de-poids)
-  - [🎯 Guide de qualité de compression](#-guide-de-qualité-de-compression)
-  - [📋 Exemple complet](#-exemple-complet-avec-gestion-derreurs)
-- [API](#api)
-- [Limitations](#limitations)
-- [📚 Plus d'exemples](#-plus-dexemples)
+- [Capture Helper](#capture-helper)
+  - [📋 Table des matières](#-table-des-matières)
+  - [📚 Documentation complète](#-documentation-complète)
+  - [Fonctionnalités](#fonctionnalités)
+  - [Plateformes supportées](#plateformes-supportées)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+    - [iOS](#ios)
+    - [Android](#android)
+  - [🚀 Démarrage rapide](#-démarrage-rapide)
+  - [Utilisation](#utilisation)
+    - [📸 Scanner une image simple](#-scanner-une-image-simple)
+    - [📦 Scanner avec compression automatique](#-scanner-avec-compression-automatique)
+    - [🎨 Choisir le format de sortie (JPEG vs PNG)](#-choisir-le-format-de-sortie-jpeg-vs-png)
+    - [🎯 Scanner avec limite de pages](#-scanner-avec-limite-de-pages)
+    - [📸 Scanner avec capture manuelle](#-scanner-avec-capture-manuelle)
+    - [🔄 Exemple complet avec toutes les options](#-exemple-complet-avec-toutes-les-options)
+    - [🗜️ Compresser une image existante](#️-compresser-une-image-existante)
+    - [📏 Scanner avec limite de poids](#-scanner-avec-limite-de-poids)
+    - [🎯 Guide de qualité de compression](#-guide-de-qualité-de-compression)
+    - [📋 Exemple complet avec gestion d'erreurs](#-exemple-complet-avec-gestion-derreurs)
+    - [📄 Compression de PDF](#-compression-de-pdf)
+    - [💾 Stockage des fichiers](#-stockage-des-fichiers)
+  - [API](#api)
+    - [CaptureHelper](#capturehelper)
+      - [Méthodes](#méthodes)
+    - [CaptureHelperScanOptions](#capturehelperscanoptions)
+    - [CaptureHelperScanResult](#capturehelperscanresult)
+    - [CaptureHelperCompressionResult](#capturehelpercompressionresult)
+  - [Architecture](#architecture)
+  - [Développement](#développement)
+    - [Régénérer le code Pigeon](#régénérer-le-code-pigeon)
+    - [Exécuter les tests](#exécuter-les-tests)
+    - [Swift Package Manager et CocoaPods](#swift-package-manager-et-cocoapods)
+    - [Exécuter l'exemple](#exécuter-lexemple)
+  - [Limitations](#limitations)
+    - [iOS](#ios-1)
+    - [Android](#android-1)
+  - [Qualité de compression recommandée](#qualité-de-compression-recommandée)
+  - [📚 Plus d'exemples](#-plus-dexemples)
+    - [Exemples de code](#exemples-de-code)
+    - [Application exemple](#application-exemple)
+  - [Licence](#licence)
+  - [Auteur](#auteur)
 
 ## 📚 Documentation complète
 
 - **[CHEATSHEET.md](CHEATSHEET.md)** - Aide-mémoire rapide avec toutes les commandes
 - **[EXAMPLES.md](EXAMPLES.md)** - Exemples de code détaillés pour tous les cas d'usage
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guide de résolution des problèmes
-- **[docs/TECHS.md](docs/TECHS.md)** - Documentation technique complète
+- **[CHANGELOG.md](CHANGELOG.md)** - Historique des versions
+- **[doc/SPECS.md](doc/SPECS.md)** - Spécifications fonctionnelles
+- **[doc/TECHS.md](doc/TECHS.md)** - Documentation technique (architecture, comportements par plateforme, outillage)
 
 ## Fonctionnalités
 
@@ -41,8 +71,11 @@ Un plugin Flutter pour la numérisation de documents avec compression d'images i
 
 | Plateforme | Version minimale | API native |
 |------------|------------------|------------|
+| Flutter    | 3.44+ (Dart 3.12+) | -        |
 | iOS        | 13.0+           | VisionKit  |
-| Android    | API 21+ (5.0)   | ML Kit     |
+| Android    | API 24+ (7.0)   | ML Kit     |
+
+Sur iOS, le plugin supporte **Swift Package Manager** (par défaut depuis Flutter 3.44) et **CocoaPods**.
 
 ## Installation
 
@@ -50,14 +83,13 @@ Ajoutez cette ligne à votre fichier `pubspec.yaml` :
 
 ```yaml
 dependencies:
-  capture_helper:
-    path: ../capture_helper
+  capture_helper: ^1.2.0
 ```
 
-Puis exécutez :
+Ou via la ligne de commande :
 
 ```bash
-flutter pub get
+flutter pub add capture_helper
 ```
 
 ## Configuration
@@ -73,30 +105,24 @@ Ajoutez la permission caméra dans votre `ios/Runner/Info.plist` :
 
 ### Android
 
-Les permissions sont automatiquement ajoutées via le manifest du plugin. Assurez-vous que votre `android/build.gradle` a les bonnes configurations :
+La permission caméra est automatiquement ajoutée via le manifest du plugin. Assurez-vous que votre `android/app/build.gradle.kts` respecte le `minSdk` requis :
 
-```gradle
+```kotlin
 android {
-    compileSdkVersion 36
-    minSdkVersion 24
+    defaultConfig {
+        minSdk = 24 // ou flutter.minSdkVersion (24 par défaut depuis Flutter 3.44)
+    }
 }
 ```
 
-**⚠️ Important : Version Java**
+**Compatibilité Gradle / Kotlin**
 
-Ce plugin nécessite Java 17, 21 ou 23. Java 24 n'est pas encore compatible avec Gradle 8.12.
+- Le plugin utilise le Kotlin intégré d'AGP 9 et fonctionne avec `android.builtInKotlin=true` comme `false`.
+- Java 17 minimum est requis (Java 21 recommandé). Vérifiez avec `flutter doctor -v` et, si besoin :
 
 ```bash
-# Vérifier votre version Java
-flutter doctor -v
-
-# Si vous avez Java 24, installer Java 21 (recommandé)
-# macOS avec Homebrew :
-brew install openjdk@21
-flutter config --jdk-dir=/opt/homebrew/opt/openjdk@21
+flutter config --jdk-dir=/chemin/vers/jdk-21
 ```
-
-Pour plus de détails, consultez [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## 🚀 Démarrage rapide
 
@@ -210,6 +236,63 @@ final resultPNG = await captureHelper.scanDocument(
 - Photos de documents
 - Fichiers plus légers pour le stockage/partage
 - Qualité largement suffisante pour la lecture
+
+### 🎯 Scanner avec limite de pages
+
+```dart
+// Limiter à 2 pages maximum
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    pageLimit: 2,  // Le scanner se ferme après 2 pages (Android)
+  ),
+);
+
+if (result.success) {
+  print('✅ ${result.imageCount} page(s) scannée(s) (max: 2)');
+
+  // iOS : VisionKit ne permet pas d'arrêter la capture à N pages,
+  // les pages en trop sont ignorées et comptées dans ignoredPageCount
+  if (result.hasIgnoredPages) {
+    print('⚠️ ${result.ignoredPageCount} page(s) ignorée(s) (limite : 2)');
+  }
+}
+```
+
+> 💡 Sur iOS, pensez à indiquer la limite à l'utilisateur avant d'ouvrir le scanner
+> (« 2 pages maximum ») : VisionKit le laisse capturer plus de pages que la limite.
+
+### 📸 Scanner avec capture manuelle
+
+```dart
+// L'utilisateur doit appuyer sur le bouton pour capturer (Android uniquement)
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    useAutomaticCapture: false,  // Désactive la capture automatique
+  ),
+);
+
+// Note: Sur iOS, la capture automatique est toujours activée (limitation VisionKit)
+```
+
+### 🔄 Exemple complet avec toutes les options
+
+```dart
+final result = await captureHelper.scanDocument(
+  options: const CaptureHelperScanOptions(
+    autoCompress: true,              // Compresser automatiquement
+    compressionQuality: 75,          // Qualité moyenne
+    outputFormat: OutputFormat.jpeg, // Format JPEG
+    useAutomaticCapture: false,      // Capture manuelle (Android)
+    pageLimit: 5,                    // Maximum 5 pages
+  ),
+);
+
+if (result.success) {
+  print('✅ ${result.imageCount} page(s) scannée(s)');
+  print('📄 Limite: 5 pages');
+  print('📸 Mode: Capture manuelle');
+}
+```
 
 ### 🗜️ Compresser une image existante
 
@@ -363,6 +446,40 @@ if (pdfResult.success) {
 }
 ```
 
+### 💾 Stockage des fichiers
+
+Le plugin renvoie des **chemins de fichiers**. Tous les fichiers produits (pages scannées et fichiers
+compressés) sont écrits dans le **cache** de l'application :
+
+| Plateforme | Répertoire |
+|------------|-----------|
+| iOS | `Library/Caches/capture_helper/` |
+| Android | `cacheDir/capture_helper/` |
+
+Ces fichiers sont **temporaires** : le système peut les supprimer en cas de manque d'espace. Pour conserver
+un document, copiez-le dans un répertoire persistant, par exemple avec
+[`path_provider`](https://pub.dev/packages/path_provider) :
+
+```dart
+import 'dart:io';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+
+final result = await CaptureHelper().scanDocument();
+if (result.success) {
+  final documentsDir = await getApplicationDocumentsDirectory();
+  for (final imagePath in result.imagePaths) {
+    await File(imagePath).copy(p.join(documentsDir.path, p.basename(imagePath)));
+  }
+}
+```
+
+Une fois les fichiers envoyés ou copiés, libérez l'espace avec `clearTemporaryFiles()` :
+
+```dart
+await CaptureHelper().clearTemporaryFiles(); // vide le dossier capture_helper/ du cache
+```
+
 ## API
 
 ### CaptureHelper
@@ -375,6 +492,7 @@ La classe principale du plugin (singleton).
 - `Future<CaptureHelperScanResult> scanDocument({CaptureHelperScanOptions options})` - Lance la numérisation
 - `Future<CaptureHelperCompressionResult> compressImage({required String imagePath, int quality = 80})` - Compresse une image
 - `Future<CaptureHelperCompressionResult> compressPdf({required String pdfPath, int quality = 80})` - Compresse un PDF
+- `Future<bool> clearTemporaryFiles()` - Supprime tous les fichiers produits par le plugin (dossier `capture_helper/` du cache)
 
 ### CaptureHelperScanOptions
 
@@ -382,10 +500,26 @@ Options de configuration pour la numérisation.
 
 ```dart
 CaptureHelperScanOptions({
-  bool autoCompress = false,
-  int compressionQuality = 80, // 0-100
+  bool autoCompress = false,          // Compression automatique après scan
+  int compressionQuality = 80,         // Qualité de compression (0-100)
+  OutputFormat outputFormat = OutputFormat.jpeg, // Format de sortie (jpeg/png)
+  bool useAutomaticCapture = true,     // Capture auto quand document détecté
+  int pageLimit = 0,                   // Limite de pages (0 = illimité)
 })
 ```
+
+**Nouvelles options :**
+
+- **`useAutomaticCapture`** :
+  - `true` (défaut) : La photo est prise automatiquement dès que le document est détecté
+  - `false` : L'utilisateur doit appuyer manuellement sur le bouton pour capturer
+  - ⚠️ **Note iOS** : VisionKit ne supporte pas la désactivation de la capture automatique. Cette option est ignorée sur iOS.
+  - ✅ **Android** : Utilise `SCANNER_MODE_BASE` (mode manuel) ou `SCANNER_MODE_FULL` (mode auto)
+
+- **`pageLimit`** :
+  - `0` (défaut) : Aucune limite, l'utilisateur peut scanner autant de pages qu'il veut
+  - `N > 0` : Limite le nombre de pages à N. Sur Android, le scanner se ferme automatiquement après N pages
+  - ⚠️ **Note iOS** : VisionKit ne ferme pas automatiquement le scanner. Le plugin limite le nombre de pages retournées et indique le nombre de pages ignorées dans `ignoredPageCount`.
 
 ### CaptureHelperScanResult
 
@@ -396,6 +530,8 @@ Résultat d'une numérisation.
 - `bool success` - Indique si l'opération a réussi
 - `String? errorMessage` - Message d'erreur éventuel
 - `int imageCount` - Nombre d'images scannées
+- `int ignoredPageCount` - Pages capturées mais ignorées car au-delà de `pageLimit` (iOS uniquement, toujours 0 sur Android)
+- `bool hasIgnoredPages` - Indique si des pages ont été ignorées
 - `bool wasCancelled` - Indique si l'utilisateur a annulé
 
 ### CaptureHelperCompressionResult
@@ -430,25 +566,29 @@ lib/
 │   └── generated/                   # Code généré par Pigeon
 │       └── document_scanner_api.g.dart
 
-ios/Classes/
-├── CaptureHelperPlugin.swift       # Plugin principal iOS
-├── Services/
-│   ├── DocumentScannerService.swift
-│   ├── ImageCompressionService.swift
-│   ├── PDFCompressionService.swift
-│   └── PermissionManager.swift
-└── Generated/                       # Code généré par Pigeon
-    └── DocumentScannerApi.g.swift
+ios/
+├── capture_helper.podspec           # Intégration CocoaPods
+└── capture_helper/                  # Swift Package (SPM)
+    ├── Package.swift
+    └── Sources/capture_helper/
+        ├── CaptureHelperPlugin.swift   # Plugin principal iOS
+        ├── PrivacyInfo.xcprivacy       # Privacy manifest
+        ├── Services/
+        │   ├── DocumentScannerService.swift
+        │   ├── ImageCompressionService.swift
+        │   ├── OutputDirectory.swift
+        │   ├── PDFCompressionService.swift
+        │   └── PermissionManager.swift
+        └── Generated/                  # Code généré par Pigeon
+            └── DocumentScannerApi.g.swift
 
 android/src/main/kotlin/.../
-├── CaptureHelperPlugin.kt          # Plugin principal Android
-├── services/
-│   ├── DocumentScannerService.kt
-│   ├── ImageCompressionService.kt
-│   ├── PDFCompressionService.kt
-│   └── PermissionManager.kt
+├── CaptureHelperPlugin.kt           # Plugin principal Android (implémente DocumentScannerApi)
 └── generated/                       # Code généré par Pigeon
     └── DocumentScannerApi.g.kt
+
+pigeons/
+└── document_scanner_api.dart        # Définition de l'API Pigeon (source de vérité)
 ```
 
 ## Développement
@@ -468,8 +608,23 @@ dart run pigeon --input pigeons/document_scanner_api.dart
 ### Exécuter les tests
 
 ```bash
+# Tests Dart
 flutter test
+
+# Tests unitaires Kotlin (après un premier build de l'exemple)
+cd example/android && ./gradlew :capture_helper:testDebugUnitTest
+
+# Validation du podspec CocoaPods
+pod lib lint ios/capture_helper.podspec --configuration=Debug --skip-tests --use-modular-headers --use-libraries --allow-warnings
 ```
+
+### Swift Package Manager et CocoaPods
+
+Le plugin doit rester compatible avec les deux gestionnaires :
+
+- **SPM** (par défaut depuis Flutter 3.44) : `cd example && flutter build ios --no-codesign`
+- **CocoaPods** : tester dans une app avec `enable-swift-package-manager: false` dans la section `flutter: config:` du `pubspec.yaml`
+  (l'exemple étant migré en SPM, il ne peut plus servir à tester CocoaPods)
 
 ### Exécuter l'exemple
 
@@ -486,7 +641,7 @@ flutter run
 - VisionKit requiert l'accès à la caméra
 
 ### Android
-- Nécessite Android API 21 (5.0) ou supérieur
+- Nécessite Android API 24 (7.0) ou supérieur
 - Nécessite Google Play Services pour ML Kit
 - La numérisation nécessite la permission CAMERA
 
@@ -526,4 +681,5 @@ Ce projet est sous licence MIT.
 ## Auteur
 
 **Author:** [Alexis Louis](https://alexislouis.xyz)
-Développé avec ❤️ pour faciliter la numérisation de documents dans Flutter.
+
+**Contact :** [support@alexislouis.xyz](mailto:support@alexislouis.xyz)

@@ -5,8 +5,17 @@ import VisionKit
 @available(iOS 13.0, *)
 class DocumentScannerService: NSObject {
     private weak var presentingViewController: UIViewController?
-    private var scanCompletion: ((Result<[URL], Error>) -> Void)?
+    private var scanCompletion: ((Result<ScanOutput, Error>) -> Void)?
     private var outputFormat: String = "jpeg"
+    private var pageLimit: Int = 0 // 0 = illimité
+
+    /// Résultat d'une numérisation réussie
+    struct ScanOutput {
+        /// Fichiers des pages conservées
+        let imageURLs: [URL]
+        /// Pages capturées mais ignorées car au-delà de pageLimit
+        let ignoredPageCount: Int
+    }
 
     enum ScanError: Error {
         case notAvailable
@@ -28,22 +37,24 @@ class DocumentScannerService: NSObject {
         }
     }
 
-    init(presentingViewController: UIViewController?, outputFormat: String = "jpeg") {
+    init(
+        presentingViewController: UIViewController?,
+        outputFormat: String = "jpeg",
+        pageLimit: Int = 0
+    ) {
         self.presentingViewController = presentingViewController
         self.outputFormat = outputFormat
+        self.pageLimit = pageLimit
         super.init()
     }
 
     /// Vérifie si VisionKit est disponible
     static func isScanningAvailable() -> Bool {
-        if #available(iOS 13.0, *) {
-            return VNDocumentCameraViewController.isSupported
-        }
-        return false
+        return VNDocumentCameraViewController.isSupported
     }
 
     /// Lance la numérisation de documents
-    func scanDocument(completion: @escaping (Result<[URL], Error>) -> Void) {
+    func scanDocument(completion: @escaping (Result<ScanOutput, Error>) -> Void) {
         guard Self.isScanningAvailable() else {
             completion(.failure(ScanError.notAvailable))
             return
@@ -64,9 +75,9 @@ class DocumentScannerService: NSObject {
         }
     }
 
-    /// Sauvegarde une image VNDocumentCameraScan dans un fichier temporaire
+    /// Sauvegarde une image VNDocumentCameraScan dans le répertoire de sortie du plugin
     private func saveImage(_ image: UIImage, index: Int) -> URL? {
-        let tempDirectory = FileManager.default.temporaryDirectory
+        let outputDirectory = OutputDirectory.url()
         let timestamp = Int(Date().timeIntervalSince1970 * 1000)
 
         // Déterminer l'extension et les données selon le format
@@ -81,7 +92,7 @@ class DocumentScannerService: NSObject {
         }
 
         let filename = "scan_\(timestamp)_\(index).\(fileExtension)"
-        let fileURL = tempDirectory.appendingPathComponent(filename)
+        let fileURL = outputDirectory.appendingPathComponent(filename)
 
         guard let data = imageData else {
             return nil
@@ -109,7 +120,15 @@ extension DocumentScannerService: VNDocumentCameraViewControllerDelegate {
 
             var imageURLs: [URL] = []
 
-            for i in 0..<scan.pageCount {
+            // Déterminer le nombre de pages à sauvegarder
+            let maxPages: Int
+            if self.pageLimit > 0 {
+                maxPages = min(self.pageLimit, scan.pageCount)
+            } else {
+                maxPages = scan.pageCount
+            }
+
+            for i in 0..<maxPages {
                 let image = scan.imageOfPage(at: i)
                 if let url = self.saveImage(image, index: i) {
                     imageURLs.append(url)
@@ -119,7 +138,10 @@ extension DocumentScannerService: VNDocumentCameraViewControllerDelegate {
             if imageURLs.isEmpty {
                 self.scanCompletion?(.failure(ScanError.noImagesScanned))
             } else {
-                self.scanCompletion?(.success(imageURLs))
+                self.scanCompletion?(.success(ScanOutput(
+                    imageURLs: imageURLs,
+                    ignoredPageCount: scan.pageCount - maxPages
+                )))
             }
 
             self.scanCompletion = nil

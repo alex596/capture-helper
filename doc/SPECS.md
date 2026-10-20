@@ -19,7 +19,7 @@ Fournir aux développeurs Flutter un plugin sécurisé et performant pour intég
 
 ### Technologies utilisées
 - **iOS** : VisionKit avec VNDocumentCameraViewController (iOS 13.0+)
-- **Android** : ML Kit Document Scanner API (Android API 21+)
+- **Android** : ML Kit Document Scanner API (Android API 24+)
 - **Communication** : Pigeon pour une interface type-safe entre Flutter et les plateformes natives
 
 ### Avantages de l'approche
@@ -162,7 +162,7 @@ graph LR
 
 ### Limitations techniques
 - **iOS** : Nécessite iOS 13.0+ et un appareil physique (pas de simulateur)
-- **Android** : Nécessite Android API 21+ et Google Play Services
+- **Android** : Nécessite Android API 24+ et Google Play Services
 - **Formats** : Support JPEG uniquement (PNG en roadmap)
 - **Concurrent** : Un seul scan actif à la fois par application
 

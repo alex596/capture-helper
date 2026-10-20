@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dart:
+    name: Dart (Flutter ${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Version minimale supportée (pubspec) et dernière stable
+        flutter-version: ['3.44.x', 'stable']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ matrix.flutter-version == 'stable' && '' || matrix.flutter-version }}
+          cache: true
+      - run: flutter pub get
+      - name: Vérifier le formatage
+        run: dart format --output=none --set-exit-if-changed $(git ls-files '*.dart' ':!:*.g.dart')
+      - run: flutter analyze
+      - run: flutter test
+      - name: Vérifier la publication
+        if: matrix.flutter-version == 'stable'
+        run: flutter pub publish --dry-run
+
+  android:
+    name: Android (build + tests Kotlin)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build APK de l'exemple
+        working-directory: example
+        run: flutter build apk --debug
+      - name: Tests unitaires Kotlin
+        working-directory: example/android
+        run: ./gradlew :capture_helper:testDebugUnitTest
+
+  ios:
+    name: iOS (SPM + CocoaPods)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build iOS de l'exemple (Swift Package Manager)
+        working-directory: example
+        run: flutter build ios --no-codesign --debug
+      - name: Validation du podspec (CocoaPods)
+        run: pod lib lint ios/capture_helper.podspec --configuration=Debug --skip-tests --use-modular-headers --use-libraries --allow-warnings

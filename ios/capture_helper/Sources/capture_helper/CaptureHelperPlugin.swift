@@ -28,7 +28,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                 let scanResult = ScanResult(
                     imagePaths: [],
                     success: false,
-                    errorMessage: error.localizedDescription
+                    errorMessage: error.localizedDescription,
+                    ignoredPageCount: 0
                 )
                 completion(.success(scanResult))
             }
@@ -44,17 +45,21 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
             let scanResult = ScanResult(
                 imagePaths: [],
                 success: false,
-                errorMessage: "No view controller available"
+                errorMessage: "No view controller available",
+                ignoredPageCount: 0
             )
             completion(.success(scanResult))
             return
         }
 
         // Créer le service de numérisation
+        // Note: VisionKit ne supporte pas la désactivation de la capture automatique.
+        // La capture automatique est toujours activée sur iOS (comportement natif de VNDocumentCameraViewController).
         if #available(iOS 13.0, *) {
             let scanner = DocumentScannerService(
                 presentingViewController: viewController,
-                outputFormat: options.outputFormat
+                outputFormat: options.outputFormat,
+                pageLimit: Int(options.pageLimit)
             )
             self.scannerService = scanner
 
@@ -62,8 +67,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                 guard let self = self else { return }
 
                 switch result {
-                case .success(let urls):
-                    var imagePaths = urls.map { $0.path }
+                case .success(let output):
+                    var imagePaths = output.imageURLs.map { $0.path }
 
                     // Compression automatique si demandée
                     if options.autoCompress {
@@ -76,7 +81,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                     let scanResult = ScanResult(
                         imagePaths: imagePaths,
                         success: true,
-                        errorMessage: nil
+                        errorMessage: nil,
+                        ignoredPageCount: Int64(output.ignoredPageCount)
                     )
                     completion(.success(scanResult))
 
@@ -84,7 +90,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
                     let scanResult = ScanResult(
                         imagePaths: [],
                         success: false,
-                        errorMessage: error.localizedDescription
+                        errorMessage: error.localizedDescription,
+                        ignoredPageCount: 0
                     )
                     completion(.success(scanResult))
                 }
@@ -95,7 +102,8 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
             let scanResult = ScanResult(
                 imagePaths: [],
                 success: false,
-                errorMessage: "Document scanning requires iOS 13.0 or later"
+                errorMessage: "Document scanning requires iOS 13.0 or later",
+                ignoredPageCount: 0
             )
             completion(.success(scanResult))
         }
@@ -167,6 +175,10 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
         }
     }
 
+    func clearTemporaryFiles(completion: @escaping (Result<Bool, Error>) -> Void) {
+        completion(.success(OutputDirectory.clear()))
+    }
+
     func isScanningAvailable() throws -> Bool {
         if #available(iOS 13.0, *) {
             return DocumentScannerService.isScanningAvailable()
@@ -177,11 +189,18 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
     // MARK: - Helper Methods
 
     private func getRootViewController() -> UIViewController? {
-        if #available(iOS 13.0, *) {
-            return UIApplication.shared.windows.first?.rootViewController
-        } else {
-            return UIApplication.shared.keyWindow?.rootViewController
+        // Fenêtre principale de la scène active (compatible cycle de vie UIScene)
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+
+        // Remonter jusqu'au view controller affiché au premier plan
+        var topViewController = keyWindow?.rootViewController
+        while let presented = topViewController?.presentedViewController {
+            topViewController = presented
         }
+        return topViewController
     }
 
     private func compressScannedImages(_ imagePaths: [String], quality: Int) -> [String] {
