@@ -7,7 +7,7 @@ import 'package:pigeon/pigeon.dart';
     swiftOut: 'ios/Classes/Generated/DocumentScannerApi.g.swift',
     swiftOptions: SwiftOptions(),
     kotlinOut: 'android/src/main/kotlin/com/flutter/plugin/helper/capture_helper/generated/DocumentScannerApi.g.kt',
-    kotlinOptions: KotlinOptions(),
+    kotlinOptions: KotlinOptions(package: 'com.flutter.plugin.helper.capture_helper.generated'),
   ),
 )
 /// Options pour la numérisation de documents
@@ -85,15 +85,15 @@ class CompressionResult {
 @HostApi()
 abstract class DocumentScannerApi {
   /// Lance l'interface de numérisation de documents
-  @async
+  @asyncCallback
   ScanResult scanDocument(ScanOptions options);
 
   /// Compresse une image
-  @async
+  @asyncCallback
   CompressionResult compressImage(String imagePath, int quality);
 
   /// Compresse un PDF
-  @async
+  @asyncCallback
   CompressionResult compressPdf(String pdfPath, int quality);
 
   /// Vérifie si la numérisation est disponible sur l'appareil

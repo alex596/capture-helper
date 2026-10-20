@@ -1,108 +1,64 @@
 package com.flutter.plugin.helper.capture_helper
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
-import androidx.annotation.NonNull
+import com.flutter.plugin.helper.capture_helper.generated.CompressionResult
+import com.flutter.plugin.helper.capture_helper.generated.DocumentScannerApi
+import com.flutter.plugin.helper.capture_helper.generated.FlutterError
+import com.flutter.plugin.helper.capture_helper.generated.ScanOptions
+import com.flutter.plugin.helper.capture_helper.generated.ScanResult
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.PluginRegistry
 import java.io.File
 import java.io.FileOutputStream
 
 /** CaptureHelperPlugin */
-class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener {
+class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.ActivityResultListener, DocumentScannerApi {
 
+    private var context: Context? = null
     private var activity: Activity? = null
-    private var pendingResult: BasicMessageChannel.Reply<Any?>? = null
+    private var activityBinding: ActivityPluginBinding? = null
+    private var pendingCallback: ((Result<ScanResult>) -> Unit)? = null
     private var outputFormat: String = "jpeg"
-    private var useAutomaticCapture: Boolean = true
-    private var pageLimit: Int = 0
-    private lateinit var scanChannel: BasicMessageChannel<Any?>
-    private lateinit var availabilityChannel: BasicMessageChannel<Any?>
 
     companion object {
         private const val REQUEST_CODE_SCAN = 100
     }
 
-    private lateinit var compressImageChannel: BasicMessageChannel<Any?>
-
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        android.util.Log.d("CaptureHelper", "Plugin attached to engine")
-        val codec = PigeonCodec()
-
-        // Setup scan document channel
-        scanChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.scanDocument",
-            codec
-        )
-        scanChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received scanDocument message: $message")
-            handleScanDocument(message, reply)
-        }
-
-        // Setup availability check channel
-        availabilityChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.isScanningAvailable",
-            codec
-        )
-        availabilityChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received isScanningAvailable message: $message")
-            handleIsScanningAvailable(reply)
-        }
-
-        // Setup compress image channel
-        compressImageChannel = BasicMessageChannel(
-            flutterPluginBinding.binaryMessenger,
-            "dev.flutter.pigeon.capture_helper.DocumentScannerApi.compressImage",
-            codec
-        )
-        compressImageChannel.setMessageHandler { message, reply ->
-            android.util.Log.d("CaptureHelper", "Received compressImage message: $message")
-            handleCompressImage(message, reply)
-        }
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        context = flutterPluginBinding.applicationContext
+        DocumentScannerApi.setUp(flutterPluginBinding.binaryMessenger, this)
     }
 
-    private fun handleIsScanningAvailable(reply: BasicMessageChannel.Reply<Any?>) {
-        // ML Kit Document Scanner is available on Android API 21+
-        reply.reply(listOf(true))
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        DocumentScannerApi.setUp(binding.binaryMessenger, null)
+        context = null
     }
 
-    private fun handleScanDocument(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
-        if (activity == null) {
-            reply.reply(listOf(
-                "NO_ACTIVITY",
-                "Activity not available",
-                null
-            ))
+    override fun isScanningAvailable(): Boolean {
+        // ML Kit Document Scanner est disponible à partir de l'API 21
+        return true
+    }
+
+    override fun scanDocument(options: ScanOptions, callback: (Result<ScanResult>) -> Unit) {
+        val currentActivity = activity
+        if (currentActivity == null) {
+            callback(Result.failure(FlutterError("NO_ACTIVITY", "Activity not available")))
+            return
+        }
+        if (pendingCallback != null) {
+            callback(Result.failure(FlutterError("ALREADY_ACTIVE", "A scan is already in progress")))
             return
         }
 
-        try {
-            // Extraire les options (Pigeon envoie les arguments sous forme de liste : [ScanOptions])
-            @Suppress("UNCHECKED_CAST")
-            val options = (message as? List<*>)?.firstOrNull() as? Map<String, Any?>
-            outputFormat = options?.get("outputFormat") as? String ?: "jpeg"
-            useAutomaticCapture = options?.get("useAutomaticCapture") as? Boolean ?: true
-            pageLimit = (options?.get("pageLimit") as? Number)?.toInt() ?: 0
+        outputFormat = options.outputFormat
 
-            startScanning(reply)
-        } catch (e: Exception) {
-            reply.reply(listOf(
-                "ERROR",
-                "Failed to start scanning: ${e.message}",
-                null
-            ))
-        }
-    }
-
-    private fun startScanning(reply: BasicMessageChannel.Reply<Any?>) {
         val optionsBuilder = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(false)
             .setResultFormats(
@@ -112,28 +68,26 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
         // Configurer la limite de pages (0 = illimité : sans appel à setPageLimit,
         // ML Kit n'est limité que par les ressources de l'appareil)
-        if (pageLimit > 0) {
-            optionsBuilder.setPageLimit(pageLimit)
+        if (options.pageLimit > 0) {
+            optionsBuilder.setPageLimit(options.pageLimit.toInt())
         }
 
         // Configurer le mode de capture
-        val scannerMode = if (useAutomaticCapture) {
+        val scannerMode = if (options.useAutomaticCapture) {
             GmsDocumentScannerOptions.SCANNER_MODE_FULL
         } else {
             GmsDocumentScannerOptions.SCANNER_MODE_BASE
         }
         optionsBuilder.setScannerMode(scannerMode)
 
-        val options = optionsBuilder.build()
+        val scanner = GmsDocumentScanning.getClient(optionsBuilder.build())
 
-        val scanner = GmsDocumentScanning.getClient(options)
+        pendingCallback = callback
 
-        pendingResult = reply
-
-        scanner.getStartScanIntent(activity!!)
+        scanner.getStartScanIntent(currentActivity)
             .addOnSuccessListener { intentSender ->
                 try {
-                    activity?.startIntentSenderForResult(
+                    currentActivity.startIntentSenderForResult(
                         intentSender,
                         REQUEST_CODE_SCAN,
                         null,
@@ -142,90 +96,34 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                         0
                     )
                 } catch (e: Exception) {
-                    pendingResult?.reply(listOf(
-                        "SCAN_ERROR",
-                        "Failed to start scanner: ${e.message}",
-                        null
-                    ))
-                    pendingResult = null
+                    completeScan(Result.failure(FlutterError("SCAN_ERROR", "Failed to start scanner: ${e.message}")))
                 }
             }
             .addOnFailureListener { e ->
-                pendingResult?.reply(listOf(
-                    "SCAN_ERROR",
-                    "Failed to get scan intent: ${e.message}",
-                    null
-                ))
-                pendingResult = null
+                completeScan(Result.failure(FlutterError("SCAN_ERROR", "Failed to get scan intent: ${e.message}")))
             }
     }
 
-    private fun handleCompressImage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
-        try {
-            @Suppress("UNCHECKED_CAST")
-            val args = message as? List<Any?>
-
-            if (args == null || args.size < 2) {
-                reply.reply(listOf(
-                    "INVALID_ARGS",
-                    "Invalid arguments for compressImage",
-                    null
-                ))
-                return
-            }
-
-            val imagePath = args[0] as? String
-            val quality = (args[1] as? Number)?.toInt() ?: 80
-
-            if (imagePath == null) {
-                reply.reply(listOf(
-                    "INVALID_PATH",
-                    "Image path is null",
-                    null
-                ))
-                return
-            }
-
-            compressImage(imagePath, quality, reply)
-        } catch (e: Exception) {
-            reply.reply(listOf(
-                "ERROR",
-                "Failed to compress image: ${e.message}",
-                null
-            ))
-        }
+    override fun compressImage(imagePath: String, quality: Long, callback: (Result<CompressionResult>) -> Unit) {
+        callback(Result.success(compressImageFile(imagePath, quality.toInt())))
     }
 
-    private fun compressImage(imagePath: String, quality: Int, reply: BasicMessageChannel.Reply<Any?>) {
+    override fun compressPdf(pdfPath: String, quality: Long, callback: (Result<CompressionResult>) -> Unit) {
+        callback(Result.success(compressionFailure(0L, "PDF compression is not supported on Android")))
+    }
+
+    private fun compressImageFile(imagePath: String, quality: Int): CompressionResult {
         try {
             val sourceFile = File(imagePath)
             if (!sourceFile.exists()) {
-                val result = mapOf(
-                    "outputPath" to null,
-                    "originalSize" to 0L,
-                    "compressedSize" to 0L,
-                    "success" to false,
-                    "errorMessage" to "Source file does not exist"
-                )
-                reply.reply(listOf(result))
-                return
+                return compressionFailure(0L, "Source file does not exist")
             }
 
             val originalSize = sourceFile.length()
 
             // Read and decode the image
             val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath)
-            if (bitmap == null) {
-                val result = mapOf(
-                    "outputPath" to null,
-                    "originalSize" to originalSize,
-                    "compressedSize" to 0L,
-                    "success" to false,
-                    "errorMessage" to "Failed to decode image"
-                )
-                reply.reply(listOf(result))
-                return
-            }
+                ?: return compressionFailure(originalSize, "Failed to decode image")
 
             // Déterminer le format basé sur l'extension du fichier source
             val isPNG = imagePath.endsWith(".png", ignoreCase = true)
@@ -238,7 +136,7 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
             // Create output file
             val outputFileName = "compressed_${System.currentTimeMillis()}.$fileExtension"
-            val outputFile = File(activity!!.filesDir, outputFileName)
+            val outputFile = File(context!!.filesDir, outputFileName)
 
             // Compress and save
             // PNG: qualité ignorée (compression sans perte)
@@ -250,149 +148,129 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
             // Recycle bitmap to free memory
             bitmap.recycle()
 
-            val compressedSize = outputFile.length()
-
-            val result = mapOf(
-                "outputPath" to outputFile.absolutePath,
-                "originalSize" to originalSize,
-                "compressedSize" to compressedSize,
-                "success" to true,
-                "errorMessage" to null
+            return CompressionResult(
+                outputPath = outputFile.absolutePath,
+                originalSize = originalSize,
+                compressedSize = outputFile.length(),
+                success = true,
+                errorMessage = null
             )
-            reply.reply(listOf(result))
-
         } catch (e: Exception) {
-            val result = mapOf(
-                "outputPath" to null,
-                "originalSize" to 0L,
-                "compressedSize" to 0L,
-                "success" to false,
-                "errorMessage" to "Compression failed: ${e.message}"
-            )
-            reply.reply(listOf(result))
+            return compressionFailure(0L, "Compression failed: ${e.message}")
         }
+    }
+
+    private fun compressionFailure(originalSize: Long, errorMessage: String) = CompressionResult(
+        outputPath = null,
+        originalSize = originalSize,
+        compressedSize = 0L,
+        success = false,
+        errorMessage = errorMessage
+    )
+
+    private fun scanFailure(errorMessage: String) = ScanResult(
+        imagePaths = emptyList(),
+        success = false,
+        errorMessage = errorMessage
+    )
+
+    private fun completeScan(result: Result<ScanResult>) {
+        val callback = pendingCallback ?: return
+        pendingCallback = null
+        callback(result)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode == REQUEST_CODE_SCAN) {
-            if (pendingResult == null) return false
+        if (requestCode != REQUEST_CODE_SCAN) return false
+        if (pendingCallback == null) return false
 
-            when (resultCode) {
-                Activity.RESULT_OK -> {
-                    if (data != null) {
-                        val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(data)
-                        val pages = scanResult?.pages ?: emptyList()
+        val result = when (resultCode) {
+            Activity.RESULT_OK -> {
+                if (data != null) {
+                    val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(data)
+                    val pages = scanResult?.pages ?: emptyList()
 
-                        if (pages.isEmpty()) {
-                            // Return ScanResult: [imagePaths, success, errorMessage]
-                            val result = mapOf(
-                                "imagePaths" to emptyList<String>(),
-                                "success" to false,
-                                "errorMessage" to "No pages scanned"
-                            )
-                            pendingResult?.reply(listOf(result))
-                        } else {
-                            try {
-                                val imagePaths = pages.mapNotNull { page ->
-                                    page.imageUri?.let { uri ->
-                                        // Déterminer l'extension selon le format
-                                        val fileExtension = if (outputFormat == "png") "png" else "jpg"
-
-                                        // Lire et convertir si nécessaire
-                                        val bitmap = android.provider.MediaStore.Images.Media.getBitmap(
-                                            activity!!.contentResolver,
-                                            uri
-                                        )
-
-                                        val fileName = "scan_${System.currentTimeMillis()}_${pages.indexOf(page)}.$fileExtension"
-                                        val destFile = File(activity!!.filesDir, fileName)
-
-                                        // Sauvegarder dans le bon format
-                                        FileOutputStream(destFile).use { output ->
-                                            val format = if (outputFormat == "png") {
-                                                android.graphics.Bitmap.CompressFormat.PNG
-                                            } else {
-                                                android.graphics.Bitmap.CompressFormat.JPEG
-                                            }
-                                            bitmap.compress(format, 100, output)
-                                        }
-
-                                        // Libérer la mémoire
-                                        bitmap.recycle()
-
-                                        destFile.absolutePath
-                                    }
-                                }
-
-                                val result = mapOf(
-                                    "imagePaths" to imagePaths,
-                                    "success" to true,
-                                    "errorMessage" to null
-                                )
-                                pendingResult?.reply(listOf(result))
-                            } catch (e: Exception) {
-                                val result = mapOf(
-                                    "imagePaths" to emptyList<String>(),
-                                    "success" to false,
-                                    "errorMessage" to "Failed to save images: ${e.message}"
-                                )
-                                pendingResult?.reply(listOf(result))
-                            }
-                        }
+                    if (pages.isEmpty()) {
+                        scanFailure("No pages scanned")
                     } else {
-                        val result = mapOf(
-                            "imagePaths" to emptyList<String>(),
-                            "success" to false,
-                            "errorMessage" to "No data returned"
-                        )
-                        pendingResult?.reply(listOf(result))
+                        try {
+                            val imagePaths = pages.mapIndexedNotNull { index, page ->
+                                page.imageUri?.let { uri -> savePage(uri, index) }
+                            }
+                            ScanResult(imagePaths = imagePaths, success = true, errorMessage = null)
+                        } catch (e: Exception) {
+                            scanFailure("Failed to save images: ${e.message}")
+                        }
                     }
-                }
-                Activity.RESULT_CANCELED -> {
-                    val result = mapOf(
-                        "imagePaths" to emptyList<String>(),
-                        "success" to false,
-                        "errorMessage" to "User cancelled"
-                    )
-                    pendingResult?.reply(listOf(result))
-                }
-                else -> {
-                    val result = mapOf(
-                        "imagePaths" to emptyList<String>(),
-                        "success" to false,
-                        "errorMessage" to "Unknown error"
-                    )
-                    pendingResult?.reply(listOf(result))
+                } else {
+                    scanFailure("No data returned")
                 }
             }
-
-            pendingResult = null
-            return true
+            Activity.RESULT_CANCELED -> scanFailure("User cancelled")
+            else -> scanFailure("Unknown error")
         }
-        return false
+
+        completeScan(Result.success(result))
+        return true
     }
 
-    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        scanChannel.setMessageHandler(null)
-        availabilityChannel.setMessageHandler(null)
-        compressImageChannel.setMessageHandler(null)
+    private fun savePage(uri: android.net.Uri, index: Int): String {
+        val currentContext = context!!
+
+        // Déterminer l'extension selon le format
+        val isPNG = outputFormat == "png"
+        val fileExtension = if (isPNG) "png" else "jpg"
+
+        // Lire et convertir si nécessaire
+        val bitmap = android.provider.MediaStore.Images.Media.getBitmap(
+            currentContext.contentResolver,
+            uri
+        )
+
+        val fileName = "scan_${System.currentTimeMillis()}_$index.$fileExtension"
+        val destFile = File(currentContext.filesDir, fileName)
+
+        // Sauvegarder dans le bon format
+        FileOutputStream(destFile).use { output ->
+            val format = if (isPNG) {
+                android.graphics.Bitmap.CompressFormat.PNG
+            } else {
+                android.graphics.Bitmap.CompressFormat.JPEG
+            }
+            bitmap.compress(format, 100, output)
+        }
+
+        // Libérer la mémoire
+        bitmap.recycle()
+
+        return destFile.absolutePath
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        activity = binding.activity
-        binding.addActivityResultListener(this)
+        attachToActivity(binding)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
-        activity = null
+        detachFromActivity()
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        activity = binding.activity
-        binding.addActivityResultListener(this)
+        attachToActivity(binding)
     }
 
     override fun onDetachedFromActivity() {
+        detachFromActivity()
+    }
+
+    private fun attachToActivity(binding: ActivityPluginBinding) {
+        activity = binding.activity
+        activityBinding = binding
+        binding.addActivityResultListener(this)
+    }
+
+    private fun detachFromActivity() {
+        activityBinding?.removeActivityResultListener(this)
+        activityBinding = null
         activity = null
     }
 }

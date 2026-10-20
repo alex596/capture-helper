@@ -180,11 +180,18 @@ public class CaptureHelperPlugin: NSObject, FlutterPlugin, DocumentScannerApi {
     // MARK: - Helper Methods
 
     private func getRootViewController() -> UIViewController? {
-        if #available(iOS 13.0, *) {
-            return UIApplication.shared.windows.first?.rootViewController
-        } else {
-            return UIApplication.shared.keyWindow?.rootViewController
+        // Fenêtre principale de la scène active (compatible cycle de vie UIScene)
+        let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }
+
+        // Remonter jusqu'au view controller affiché au premier plan
+        var topViewController = keyWindow?.rootViewController
+        while let presented = topViewController?.presentedViewController {
+            topViewController = presented
         }
+        return topViewController
     }
 
     private func compressScannedImages(_ imagePaths: [String], quality: Int) -> [String] {
