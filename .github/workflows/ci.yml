@@ -16,14 +16,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Version minimale supportée (pubspec) et dernière stable
-        flutter-version: ['3.44.x', 'stable']
+        # Version minimale supportée (pubspec) et dernière stable (3.x)
+        flutter-version: ['3.44.x', '3.x']
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: ${{ matrix.flutter-version == 'stable' && '' || matrix.flutter-version }}
+          flutter-version: ${{ matrix.flutter-version }}
           cache: true
       - run: flutter pub get
       - name: Vérifier le formatage
@@ -31,7 +31,7 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - name: Vérifier la publication
-        if: matrix.flutter-version == 'stable'
+        if: matrix.flutter-version == '3.x'
         run: flutter pub publish --dry-run
 
   android:
