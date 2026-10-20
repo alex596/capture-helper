@@ -94,7 +94,7 @@ Fichier source : `pigeons/document_scanner_api.dart`.
 
 ```dart
 class ScanOptions {
-  final bool autoCompress;        // Compression après le scan (iOS uniquement, voir plus bas)
+  final bool autoCompress;        // Compression après le scan
   final int compressionQuality;   // 0-100
   final String outputFormat;      // 'jpeg' ou 'png'
   final bool useAutomaticCapture; // Capture automatique (Android uniquement)
@@ -253,18 +253,18 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
 3. **Lancement** : `getStartScanIntent(activity)` puis `startIntentSenderForResult(..., REQUEST_CODE_SCAN = 100)`.
 4. **Résultat** (`onActivityResult`) : chaque page (`imageUri`) est décodée en `Bitmap` puis réencodée en
    JPEG qualité 100 ou en PNG, dans `context.filesDir`, sous le nom `scan_<timestamp>_<index>.jpg|png`.
+5. **Compression automatique** : si `autoCompress` vaut `true`, chaque image passe par la même logique
+   que `compressImage`. En cas d'échec, l'image d'origine est conservée (même comportement qu'iOS).
 
 > ⚠️ **Points d'attention**
 > - `SCANNER_MODE_BASE` désactive les filtres et le nettoyage d'image de ML Kit. La documentation
 >   ML Kit n'indique pas qu'il désactive la capture automatique : ce comportement doit être vérifié
 >   sur un appareil.
-> - **`autoCompress` n'est pas implémenté sur Android** : les images sont retournées sans
->   compression, même si l'option est activée. Utiliser `compressImage` après le scan.
 
 ### Compression
 
 - **Image** : `BitmapFactory.decodeFile` puis `Bitmap.compress` (JPEG avec la qualité demandée, PNG sans
-  perte), dans `filesDir` sous le nom `compressed_<timestamp>.jpg|png`.
+  perte), dans `filesDir` sous le nom `<nom source>_compressed.jpg|png` (même nommage qu'iOS).
 - **PDF** : non supporté. `compressPdf` retourne un `CompressionResult` en échec
   (`"PDF compression is not supported on Android"`).
 
@@ -283,7 +283,7 @@ L'application hôte doit définir `NSCameraUsageDescription` dans son `Info.plis
 | `useAutomaticCapture: false` | Ignoré (capture toujours automatique) | `SCANNER_MODE_BASE` (à vérifier) |
 | `pageLimit: N` | Le scanner reste ouvert ; seules les N premières pages sont retournées | Le scanner se ferme après N pages |
 | `outputFormat: png` | ✅ | ✅ |
-| `autoCompress: true` | ✅ | ❌ Ignoré |
+| `autoCompress: true` | ✅ | ✅ |
 | `compressImage` | ✅ | ✅ |
 | `compressPdf` | ✅ (pages rastérisées) | ❌ Échec explicite |
 | Emplacement des scans | Répertoire temporaire (peut être purgé par le système) | `filesDir` (persistant) |
@@ -375,11 +375,10 @@ manuellement avec l'application exemple, sur iOS et Android, avant chaque public
 - iOS : capture automatique non désactivable et `pageLimit` appliqué après coup (limites de VisionKit).
 - iOS : les scans sont écrits dans le répertoire temporaire, que le système peut purger. L'application doit
   les copier si elle veut les conserver.
-- Android : `autoCompress` et `compressPdf` non implémentés.
+- Android : `compressPdf` non implémenté.
 - Un seul scan actif à la fois.
 
 ### Pistes
-- Implémenter `autoCompress` sur Android, avec la même logique que `compressImage`.
 - Aligner l'emplacement de stockage entre les plateformes (par exemple, un répertoire persistant dédié).
 - Compression PDF sur Android (`PdfRenderer` + `PdfDocument`).
 - OCR optionnel, génération de PDF à partir des scans.

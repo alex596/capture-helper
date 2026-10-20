@@ -26,6 +26,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
     private var activityBinding: ActivityPluginBinding? = null
     private var pendingCallback: ((Result<ScanResult>) -> Unit)? = null
     private var outputFormat: String = "jpeg"
+    private var autoCompress: Boolean = false
+    private var compressionQuality: Int = 80
 
     companion object {
         private const val REQUEST_CODE_SCAN = 100
@@ -58,6 +60,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
         }
 
         outputFormat = options.outputFormat
+        autoCompress = options.autoCompress
+        compressionQuality = options.compressionQuality.toInt()
 
         val optionsBuilder = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(false)
@@ -134,8 +138,8 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                 android.graphics.Bitmap.CompressFormat.JPEG
             }
 
-            // Create output file
-            val outputFileName = "compressed_${System.currentTimeMillis()}.$fileExtension"
+            // Create output file (même nommage qu'iOS : <nom>_compressed.<ext>)
+            val outputFileName = "${sourceFile.nameWithoutExtension}_compressed.$fileExtension"
             val outputFile = File(context!!.filesDir, outputFileName)
 
             // Compress and save
@@ -194,8 +198,13 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
                         scanFailure("No pages scanned")
                     } else {
                         try {
-                            val imagePaths = pages.mapIndexedNotNull { index, page ->
+                            var imagePaths = pages.mapIndexedNotNull { index, page ->
                                 page.imageUri?.let { uri -> savePage(uri, index) }
+                            }
+
+                            // Compression automatique si demandée
+                            if (autoCompress) {
+                                imagePaths = compressScannedImages(imagePaths, compressionQuality)
                             }
                             ScanResult(imagePaths = imagePaths, success = true, errorMessage = null)
                         } catch (e: Exception) {
@@ -212,6 +221,14 @@ class CaptureHelperPlugin: FlutterPlugin, ActivityAware, PluginRegistry.Activity
 
         completeScan(Result.success(result))
         return true
+    }
+
+    private fun compressScannedImages(imagePaths: List<String>, quality: Int): List<String> {
+        return imagePaths.map { imagePath ->
+            val result = compressImageFile(imagePath, quality)
+            // En cas d'échec, garder l'image originale
+            if (result.success) result.outputPath ?: imagePath else imagePath
+        }
     }
 
     private fun savePage(uri: android.net.Uri, index: Int): String {

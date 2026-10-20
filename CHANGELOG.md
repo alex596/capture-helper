@@ -28,6 +28,9 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   car le message Pigeon n'était pas décodé correctement par un codec écrit à la main. Le plugin utilise
   désormais l'API Pigeon générée (`DocumentScannerApi`) ; le format PNG est bien pris en compte sur Android.
 - **Android** : Suppression de la limite implicite de pages, `pageLimit = 0` signifie réellement « illimité »
+- **Android** : `autoCompress` est désormais appliqué après le scan (il était ignoré, seul iOS compressait)
+- **Android** : Les fichiers compressés sont nommés `<nom>_compressed.<ext>` comme sur iOS ; l'ancien nommage
+  par timestamp pouvait faire écraser des pages compressées dans la même milliseconde
 - **Android** : `compressPdf` renvoie une erreur explicite (non supporté) au lieu d'un `channel-error`
 - **Android** : Un second scan lancé pendant un scan en cours est refusé (`ALREADY_ACTIVE`)
 - **iOS** : Recherche du view controller via la scène active (compatible UIScene) et présentation
